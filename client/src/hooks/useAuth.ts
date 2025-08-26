@@ -68,10 +68,7 @@ export function useAuth() {
     setAuthState(prev => ({ ...prev, isLoading: true }));
 
     try {
-      const response = await apiRequest('/api/admin/login', {
-        method: 'POST',
-        body: JSON.stringify({ adminKey }),
-      });
+      const response = await apiRequest('POST', '/api/admin/login', { adminKey });
 
       const data = await response.json();
       if (data.sessionToken) {
