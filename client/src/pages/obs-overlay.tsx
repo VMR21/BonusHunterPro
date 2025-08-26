@@ -108,6 +108,9 @@ export default function OBSOverlayPage() {
     return currentMulti > bestMulti ? current : best;
   }, openedBonuses[0] || null);
 
+  const bestWinAmount = bestWin ? Number(bestWin.winAmount || 0) : 0;
+  const bestMultiplier = bestMulti ? Number(bestMulti.multiplier || 0) : 0;
+
   if (isV2) {
     return (
       <div className="min-h-screen bg-transparent p-8">
@@ -145,14 +148,14 @@ export default function OBSOverlayPage() {
               </div>
             </div>
             <div className="bg-gradient-to-br from-yellow-600/20 to-yellow-800/20 border border-yellow-500/30 rounded-lg p-4 text-center">
-              <div className="text-yellow-400 text-sm font-medium mb-1">AVG X</div>
-              <div className="text-white text-xl font-bold">{avgMultiplier.toFixed(2)}</div>
+              <div className="text-yellow-400 text-sm font-medium mb-1">BEST WIN</div>
+              <div className="text-white text-xl font-bold">
+                {formatCurrency(bestWinAmount, hunt.currency as Currency)}
+              </div>
             </div>
             <div className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 border border-purple-500/30 rounded-lg p-4 text-center">
-              <div className="text-purple-400 text-sm font-medium mb-1">TOTAL WIN</div>
-              <div className="text-white text-xl font-bold">
-                {formatCurrency(totalWin, hunt.currency as Currency)}
-              </div>
+              <div className="text-purple-400 text-sm font-medium mb-1">BEST MULTI</div>
+              <div className="text-white text-xl font-bold">{bestMultiplier.toFixed(2)}x</div>
             </div>
           </div>
 
