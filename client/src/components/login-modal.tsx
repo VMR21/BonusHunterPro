@@ -113,14 +113,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
           </div>
         </form>
         
-        <div className="text-sm text-muted-foreground">
-          <p className="mb-1">Available admin keys:</p>
-          <ul className="text-xs space-y-1">
-            <li>• Main Admin: admin123</li>
-            <li>• Secondary Admin: admin456</li>
-            <li>• Streamer Account: streamer789</li>
-          </ul>
-        </div>
+
       </DialogContent>
     </Dialog>
   );
