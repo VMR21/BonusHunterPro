@@ -115,12 +115,12 @@ export default function LatestHuntPage() {
     finished: "bg-green-500/20 text-green-400 border-green-500/30",
   };
 
-  const openedBonuses = bonuses.filter(b => b.status === 'opened');
-  const totalBonuses = bonuses.length;
+  const openedBonuses = bonuses?.filter(b => b.isPlayed) || [];
+  const totalBonuses = bonuses?.length || 0;
   const progress = totalBonuses > 0 ? (openedBonuses.length / totalBonuses) * 100 : 0;
   
-  const totalCost = bonuses.reduce((sum, b) => sum + b.betAmount, 0);
-  const totalWin = openedBonuses.reduce((sum, b) => sum + (b.winAmount || 0), 0);
+  const totalCost = bonuses?.reduce((sum, b) => sum + Number(b.betAmount), 0) || 0;
+  const totalWin = openedBonuses.reduce((sum, b) => sum + (Number(b.winAmount) || 0), 0);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -288,10 +288,10 @@ export default function LatestHuntPage() {
           {/* Bonuses Table */}
           <Card className="bg-dark-purple/50 border-purple-800/30">
             <CardHeader>
-              <CardTitle className="text-lg font-semibold text-white">Bonus Slots ({bonuses.length})</CardTitle>
+              <CardTitle className="text-lg font-semibold text-white">Bonus Slots ({bonuses?.length || 0})</CardTitle>
             </CardHeader>
             <CardContent>
-              {bonuses.length > 0 ? (
+              {bonuses && bonuses.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow className="border-purple-800/30">
@@ -304,7 +304,7 @@ export default function LatestHuntPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {bonuses.map((bonus) => (
+                    {bonuses?.map((bonus) => (
                       <TableRow key={bonus.id} className="border-purple-800/30 hover:bg-purple-900/20">
                         <TableCell className="text-white">{bonus.order}</TableCell>
                         <TableCell className="text-white font-medium">

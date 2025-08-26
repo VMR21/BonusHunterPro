@@ -1,7 +1,11 @@
 import { Link } from "wouter";
-import { Clock, DollarSign, Target, TrendingUp } from "lucide-react";
+import { Clock, DollarSign, Target, TrendingUp, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useDeleteHunt } from "@/hooks/use-hunts";
+import { useAdmin } from "@/hooks/use-admin";
+import { useToast } from "@/hooks/use-toast";
 import type { Hunt } from "@shared/schema";
 import { formatCurrency } from "@/lib/currency";
 
@@ -11,13 +15,40 @@ interface HuntCardProps {
 }
 
 export function HuntCard({ hunt, bonusCount = 0 }: HuntCardProps) {
+  const { isAdmin } = useAdmin();
+  const deleteHunt = useDeleteHunt();
+  const { toast } = useToast();
+  
   const statusColors = {
     collecting: "bg-blue-500/20 text-blue-400 border-blue-500/30",
     opening: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
     finished: "bg-green-500/20 text-green-400 border-green-500/30",
   };
 
-  const timeAgo = new Date(hunt.createdAt * 1000).toLocaleDateString();
+  const timeAgo = new Date(hunt.createdAt).toLocaleDateString();
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!confirm(`Are you sure you want to delete "${hunt.title}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await deleteHunt.mutateAsync(hunt.id);
+      toast({
+        title: "Success",
+        description: "Hunt deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error", 
+        description: "Failed to delete hunt",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <Card className="bg-dark-purple/50 border-purple-800/30 hover:bg-white/5 transition-colors">
@@ -82,6 +113,18 @@ export function HuntCard({ hunt, bonusCount = 0 }: HuntCardProps) {
                 Public View
               </button>
             </Link>
+          )}
+          {isAdmin && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDelete}
+              disabled={deleteHunt.isPending}
+              className="px-3"
+              data-testid={`button-delete-hunt-${hunt.id}`}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
           )}
         </div>
       </CardContent>

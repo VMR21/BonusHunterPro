@@ -22,7 +22,7 @@ export function AddBonusModal({ open, onOpenChange, huntId, nextOrder }: AddBonu
     slotName: "",
     provider: "",
     imageUrl: "",
-    betAmount: 0,
+    betAmount: "0",
     order: nextOrder,
     status: "waiting",
   });
@@ -73,7 +73,7 @@ export function AddBonusModal({ open, onOpenChange, huntId, nextOrder }: AddBonu
         slotName: "",
         provider: "",
         imageUrl: "",
-        betAmount: 0,
+        betAmount: "0",
         order: nextOrder + 1,
         status: "waiting",
       });
@@ -156,7 +156,7 @@ export function AddBonusModal({ open, onOpenChange, huntId, nextOrder }: AddBonu
               type="number"
               step="0.01"
               value={formData.betAmount}
-              onChange={(e) => setFormData({ ...formData, betAmount: parseFloat(e.target.value) || 0 })}
+              onChange={(e) => setFormData({ ...formData, betAmount: e.target.value })}
               placeholder="0.00"
               required
               className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400"
