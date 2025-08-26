@@ -15,9 +15,7 @@ export function Navigation() {
   // Only show admin-only routes to authenticated admins
   const navItems = [
     { path: "/", label: "Hunts", icon: Trophy },
-    { path: "/latest-hunt", label: "Live Hunt", icon: Eye },
     ...(isAdmin ? [
-      { path: "/admin", label: "Admin", icon: Settings },
       { path: "/obs", label: "OBS Overlay", icon: Eye },
     ] : []),
   ];
