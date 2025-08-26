@@ -19,21 +19,37 @@ export default function OBSOverlayPage() {
   const isV2 = location.includes('v2');
 
   useEffect(() => {
-    if (!huntId) {
-      setIsLoading(false);
-      return;
-    }
-
     const fetchHuntData = async () => {
       try {
-        const [huntResponse, bonusesResponse] = await Promise.all([
-          fetch(`/api/hunts/${huntId}`),
-          fetch(`/api/hunts/${huntId}/bonuses`),
-        ]);
+        let huntResponse, bonusesResponse;
+        
+        if (location.includes('/obs-overlay/latest')) {
+          // For latest hunt overlay, use the new API endpoint
+          const response = await fetch('/obs-overlay/latest');
+          if (response.ok) {
+            const data = await response.json();
+            setHunt(data.hunt);
+            setBonuses(data.bonuses);
+          }
+        } else if (huntId) {
+          // For specific hunt ID
+          [huntResponse, bonusesResponse] = await Promise.all([
+            fetch(`/api/hunts/${huntId}`),
+            fetch(`/api/hunts/${huntId}/bonuses`),
+          ]);
 
-        if (huntResponse.ok && bonusesResponse.ok) {
-          setHunt(await huntResponse.json());
-          setBonuses(await bonusesResponse.json());
+          if (huntResponse.ok && bonusesResponse.ok) {
+            setHunt(await huntResponse.json());
+            setBonuses(await bonusesResponse.json());
+          }
+        } else {
+          // Fallback to latest hunt
+          const response = await fetch('/obs-overlay/latest');
+          if (response.ok) {
+            const data = await response.json();
+            setHunt(data.hunt);
+            setBonuses(data.bonuses);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch hunt data:', error);
@@ -47,7 +63,7 @@ export default function OBSOverlayPage() {
     // Auto-refresh every 5 seconds for live updates
     const interval = setInterval(fetchHuntData, 5000);
     return () => clearInterval(interval);
-  }, [huntId]);
+  }, [huntId, location]);
 
   if (isLoading) {
     return (

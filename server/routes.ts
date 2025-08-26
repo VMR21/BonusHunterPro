@@ -159,7 +159,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const huntData = insertHuntSchema.parse(req.body);
       const hunt = await storage.createHunt(huntData);
-      res.status(201).json(hunt);
+      
+      // Generate public token immediately
+      const publicToken = randomUUID();
+      await storage.updateHunt(hunt.id, { 
+        publicToken, 
+        isPublic: true 
+      });
+      
+      // Return hunt with links
+      const response = {
+        ...hunt,
+        publicToken,
+        publicUrl: `${req.protocol}://${req.get('host')}/public-hunt/${publicToken}`,
+        obsUrl: `${req.protocol}://${req.get('host')}/obs-overlay/latest`
+      };
+      
+      res.status(201).json(response);
     } catch (error) {
       console.error('Error creating hunt:', error);
       res.status(400).json({ message: "Invalid hunt data", error: error.message });
@@ -284,6 +300,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // OBS overlay route for latest hunt (public access)
+  app.get("/obs-overlay/latest", async (req, res) => {
+    try {
+      const hunt = await storage.getLatestHunt();
+      if (!hunt) {
+        return res.status(404).json({ message: "No hunts found" });
+      }
+      
+      const bonuses = await storage.getBonusesByHuntId(hunt.id);
+      res.json({ hunt, bonuses });
+    } catch (error) {
+      console.error('Error fetching OBS overlay data:', error);
+      res.status(500).json({ message: "Failed to fetch overlay data" });
+    }
+  });
+
   // Protected OBS overlay routes (admin only)
   app.get("/api/admin/obs-overlay/:huntId", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
@@ -318,9 +350,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const slotData = slots.map(slot => ({
         name: slot.name || slot.Name || '',
         provider: slot.provider || slot.Provider || '',
-        imageUrl: slot.image_url || slot.imageUrl || slot['Image URL'] || null,
+        imageUrl: slot.image || slot.imageUrl || slot['image_url'] || slot['Image URL'] || null,
         category: slot.category || slot.Category || null,
       })).filter(slot => slot.name && slot.provider);
+      
+      console.log('Sample slot data:', slotData.slice(0, 3));
 
       await storage.bulkCreateSlots(slotData);
       

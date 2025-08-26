@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, Link } from "wouter";
-import { ArrowLeft, Plus, Play, DollarSign, Settings } from "lucide-react";
+import { ArrowLeft, Plus, Play, DollarSign, Settings, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,19 +9,70 @@ import { Progress } from "@/components/ui/progress";
 import { AddBonusModal } from "@/components/add-bonus-modal";
 import { ProviderChart } from "@/components/provider-chart";
 import { StartPlayingButton } from "@/components/start-playing-button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useHunt } from "@/hooks/use-hunts";
 import { useBonuses } from "@/hooks/use-bonuses";
 import { useAdmin } from "@/hooks/use-admin";
+import { useAdminRequest } from "@/hooks/use-admin";
 import { formatCurrency } from "@/lib/currency";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Currency } from "@/lib/currency";
+import type { Bonus } from "@shared/schema";
 
 export default function HuntDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [addBonusModalOpen, setAddBonusModalOpen] = useState(false);
+  const [showEditBetModal, setShowEditBetModal] = useState(false);
+  const [selectedBonus, setSelectedBonus] = useState<Bonus | null>(null);
+  const [editBetAmount, setEditBetAmount] = useState("");
   
   const { data: hunt, isLoading: huntLoading } = useHunt(id!);
   const { data: bonuses, isLoading: bonusesLoading } = useBonuses(id!);
   const { isAdmin } = useAdmin();
+  const { request } = useAdminRequest();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Edit bet amount mutation
+  const editBetMutation = useMutation({
+    mutationFn: async ({ bonusId, betAmount }: { bonusId: string; betAmount: string }) => {
+      return request(`/api/admin/bonuses/${bonusId}`, {
+        method: 'PUT',
+        body: { betAmount },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/hunts/${id}/bonuses`] });
+      setShowEditBetModal(false);
+      setSelectedBonus(null);
+      setEditBetAmount("");
+      toast({
+        title: "Bet Amount Updated",
+        description: "Bonus bet amount has been updated",
+        variant: "default",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update bet amount",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEditBetSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedBonus && editBetAmount) {
+      editBetMutation.mutate({
+        bonusId: selectedBonus.id,
+        betAmount: editBetAmount,
+      });
+    }
+  };
 
   if (huntLoading || bonusesLoading) {
     return (
@@ -244,6 +295,7 @@ export default function HuntDetailPage() {
                       <TableHead className="text-gray-400">Bet</TableHead>
                       <TableHead className="text-gray-400">Multiplier</TableHead>
                       <TableHead className="text-gray-400">Win</TableHead>
+                      {isAdmin && <TableHead className="text-gray-400">Actions</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -301,6 +353,26 @@ export default function HuntDetailPage() {
                         <TableCell className="text-green-400">
                           {bonus.winAmount ? formatCurrency(Number(bonus.winAmount), hunt.currency as Currency) : '-'}
                         </TableCell>
+                        {isAdmin && (
+                          <TableCell>
+                            {!hunt.isPlaying && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedBonus(bonus);
+                                  setEditBetAmount(bonus.betAmount);
+                                  setShowEditBetModal(true);
+                                }}
+                                className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
+                                data-testid={`button-edit-bet-${bonus.id}`}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -331,6 +403,70 @@ export default function HuntDetailPage() {
         huntId={hunt.id}
         nextOrder={(bonuses?.length || 0) + 1}
       />
+
+      {/* Edit Bet Modal */}
+      {selectedBonus && (
+        <Dialog open={showEditBetModal} onOpenChange={setShowEditBetModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Edit className="w-5 h-5 text-blue-600" />
+                Edit Bet Amount
+              </DialogTitle>
+              <DialogDescription>
+                Update the bet amount for {selectedBonus.slotName}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleEditBetSubmit} className="space-y-4">
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Slot:</span>
+                  <span className="font-medium">{selectedBonus.slotName}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Provider:</span>
+                  <span className="font-medium">{selectedBonus.provider}</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="editBetAmount" className="text-white">Bet Amount ({hunt.currency})</label>
+                <input
+                  id="editBetAmount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={editBetAmount}
+                  onChange={(e) => setEditBetAmount(e.target.value)}
+                  disabled={editBetMutation.isPending}
+                  data-testid="input-edit-bet-amount"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-black dark:text-white"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowEditBetModal(false)}
+                  disabled={editBetMutation.isPending}
+                  data-testid="button-cancel-edit-bet"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={!editBetAmount || editBetMutation.isPending}
+                  data-testid="button-update-bet"
+                >
+                  {editBetMutation.isPending ? "Updating..." : "Update Bet"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

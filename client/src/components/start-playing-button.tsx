@@ -12,8 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminRequest } from "@/hooks/use-admin";
-import { Play, DollarSign, Calculator } from "lucide-react";
+import { Play, DollarSign, Calculator, Edit } from "lucide-react";
+import { formatCurrency } from "@/lib/currency";
 import type { Hunt, Bonus } from "@shared/schema";
+import type { Currency } from "@/lib/currency";
 
 interface StartPlayingButtonProps {
   hunt: Hunt;
@@ -22,8 +24,10 @@ interface StartPlayingButtonProps {
 
 export function StartPlayingButton({ hunt, bonuses }: StartPlayingButtonProps) {
   const [showPayoutModal, setShowPayoutModal] = useState(false);
+  const [showEditBetModal, setShowEditBetModal] = useState(false);
   const [selectedBonus, setSelectedBonus] = useState<Bonus | null>(null);
   const [winAmount, setWinAmount] = useState("");
+  const [editBetAmount, setEditBetAmount] = useState("");
   const { request } = useAdminRequest();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -47,6 +51,34 @@ export function StartPlayingButton({ hunt, bonuses }: StartPlayingButtonProps) {
       toast({
         title: "Error",
         description: error.message || "Failed to start hunt",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Edit bet amount mutation
+  const editBetMutation = useMutation({
+    mutationFn: async ({ bonusId, betAmount }: { bonusId: string; betAmount: string }) => {
+      return request(`/api/admin/bonuses/${bonusId}`, {
+        method: 'PUT',
+        body: { betAmount },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/hunts/${hunt.id}/bonuses`] });
+      setShowEditBetModal(false);
+      setSelectedBonus(null);
+      setEditBetAmount("");
+      toast({
+        title: "Bet Amount Updated",
+        description: "Bonus bet amount has been updated",
+        variant: "default",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update bet amount",
         variant: "destructive",
       });
     },
@@ -89,6 +121,22 @@ export function StartPlayingButton({ hunt, bonuses }: StartPlayingButtonProps) {
     }
   };
 
+  const handleEditBet = (bonus: Bonus) => {
+    setSelectedBonus(bonus);
+    setEditBetAmount(bonus.betAmount);
+    setShowEditBetModal(true);
+  };
+
+  const handleEditBetSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedBonus && editBetAmount) {
+      editBetMutation.mutate({
+        bonusId: selectedBonus.id,
+        betAmount: editBetAmount,
+      });
+    }
+  };
+
   const handlePayoutSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedBonus && winAmount) {
@@ -116,15 +164,22 @@ export function StartPlayingButton({ hunt, bonuses }: StartPlayingButtonProps) {
   return (
     <>
       {!hunt.isPlaying ? (
-        <Button
-          onClick={() => startPlayingMutation.mutate()}
-          disabled={startPlayingMutation.isPending || bonuses.length === 0}
-          className="bg-green-600 hover:bg-green-700 text-white"
-          data-testid="button-start-playing"
-        >
-          <Play className="w-4 h-4 mr-2" />
-          Start Playing
-        </Button>
+        <div className="space-y-2">
+          <Button
+            onClick={() => startPlayingMutation.mutate()}
+            disabled={startPlayingMutation.isPending || bonuses.length === 0}
+            className="bg-green-600 hover:bg-green-700 text-white"
+            data-testid="button-start-playing"
+          >
+            <Play className="w-4 h-4 mr-2" />
+            Start Playing
+          </Button>
+          {bonuses.length > 0 && (
+            <p className="text-sm text-gray-400">
+              You can edit bet amounts before starting
+            </p>
+          )}
+        </div>
       ) : (
         <div className="space-y-4">
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
@@ -226,6 +281,73 @@ export function StartPlayingButton({ hunt, bonuses }: StartPlayingButtonProps) {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Bet Modal */}
+      <Dialog open={showEditBetModal} onOpenChange={setShowEditBetModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="w-5 h-5 text-blue-600" />
+              Edit Bet Amount
+            </DialogTitle>
+            <DialogDescription>
+              Update the bet amount for {selectedBonus?.slotName}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditBetSubmit} className="space-y-4">
+            {selectedBonus && (
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Slot:</span>
+                  <span className="font-medium">{selectedBonus.slotName}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Provider:</span>
+                  <span className="font-medium">{selectedBonus.provider}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="editBetAmount">Bet Amount ({hunt.currency})</Label>
+              <Input
+                id="editBetAmount"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={editBetAmount}
+                onChange={(e) => setEditBetAmount(e.target.value)}
+                disabled={editBetMutation.isPending}
+                data-testid="input-edit-bet-amount"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowEditBetModal(false)}
+                disabled={editBetMutation.isPending}
+                data-testid="button-cancel-edit-bet"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={!editBetAmount || editBetMutation.isPending}
+                data-testid="button-update-bet"
+              >
+                {editBetMutation.isPending ? "Updating..." : "Update Bet"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
+
+// Export components and functions for use in other components  
+export { StartPlayingButton as default, type StartPlayingButtonProps };
+export type { Hunt, Bonus } from "@shared/schema";
