@@ -287,13 +287,7 @@ export default function HuntDetailPage() {
                 </div>
               )}
               <div className="pt-3 border-t border-purple-800/30">
-                {hunt.publicToken && (
-                  <Link href={`/public/${hunt.publicToken}`}>
-                    <Button variant="link" className="text-primary hover:text-primary/80 p-0">
-                      📱 Public view link
-                    </Button>
-                  </Link>
-                )}
+
               </div>
             </CardContent>
           </Card>

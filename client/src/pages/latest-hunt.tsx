@@ -155,36 +155,6 @@ export default function LatestHuntPage() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
                 <div className="flex items-center space-x-3">
-                  <ExternalLink className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="text-white font-medium">Public View</p>
-                    <p className="text-gray-400 text-sm">Share with viewers</p>
-                  </div>
-                </div>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyToClipboard(publicLinks.publicUrl || publicLinks.publicLink)}
-                    data-testid="button-copy-public-link"
-                  >
-                    <Copy className="w-4 h-4 mr-2" />
-                    Copy
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(publicLinks.publicUrl || publicLinks.publicLink, '_blank')}
-                    data-testid="button-open-public-link"
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Open
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-                <div className="flex items-center space-x-3">
                   <Monitor className="w-5 h-5 text-primary" />
                   <div>
                     <p className="text-white font-medium">OBS Overlay</p>
@@ -195,7 +165,7 @@ export default function LatestHuntPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => copyToClipboard(publicLinks.obsUrl || publicLinks.obsOverlayLink)}
+                    onClick={() => copyToClipboard(publicLinks.obsOverlayLink)}
                     data-testid="button-copy-obs-link"
                   >
                     <Copy className="w-4 h-4 mr-2" />
@@ -204,7 +174,7 @@ export default function LatestHuntPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(publicLinks.obsUrl || publicLinks.obsOverlayLink, '_blank')}
+                    onClick={() => window.open(publicLinks.obsOverlayLink, '_blank')}
                     data-testid="button-open-obs-link"
                   >
                     <Monitor className="w-4 h-4 mr-2" />
