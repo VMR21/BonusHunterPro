@@ -66,33 +66,27 @@ export default function LiveOBSOverlay() {
               {hunt.status}
             </Badge>
           </div>
-          <div className="grid grid-cols-5 gap-4 text-center">
+          <div className="grid grid-cols-4 gap-6 text-center">
             <div>
-              <div className="text-2xl font-bold text-green-400">
+              <div className="text-3xl font-bold text-green-400">
                 {formatCurrency(totalWin, hunt.currency as Currency)}
               </div>
               <div className="text-sm text-gray-400">Total Win</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-yellow-400">
+              <div className="text-3xl font-bold text-yellow-400">
                 {formatCurrency(bestWinAmount, hunt.currency as Currency)}
               </div>
               <div className="text-sm text-gray-400">Best Win</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-orange-400">
+              <div className="text-3xl font-bold text-orange-400">
                 {bestMultiplier.toFixed(2)}x
               </div>
               <div className="text-sm text-gray-400">Best Multi</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-red-400">
-                {formatCurrency(totalCost, hunt.currency as Currency)}
-              </div>
-              <div className="text-sm text-gray-400">Total Cost</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-purple-400">
+              <div className="text-3xl font-bold text-purple-400">
                 {openedBonuses.length}/{totalBonuses}
               </div>
               <div className="text-sm text-gray-400">Bonuses Played</div>
@@ -137,22 +131,21 @@ export default function LiveOBSOverlay() {
           </div>
         )}
 
-        {/* Scrolling Bonuses - Horizontal with 4 slots visible */}
+        {/* Vertical Scrolling Bonuses - 4 slots visible, full width horizontal */}
         {bonuses && bonuses.length > 0 && (
           <div className="bg-black/80 backdrop-blur-sm rounded-lg p-6 border border-purple-500/30">
             <h2 className="text-xl font-bold text-purple-300 mb-4">Slots in Hunt</h2>
-            <div className="relative overflow-hidden">
+            <div className="relative overflow-hidden h-96">
               <div 
-                className="flex gap-6 transition-transform duration-1000 ease-in-out"
+                className="transition-transform duration-1000 ease-in-out space-y-4"
                 style={{
-                  transform: `translateX(-${Math.max(0, (openedBonuses.length - 2) * 25)}%)`,
-                  width: `${bonuses.length * 25}%`
+                  transform: `translateY(-${Math.max(0, (openedBonuses.length - 2) * 100)}px)`,
                 }}
               >
-                {bonuses.map((bonus, index) => (
+                {bonuses.map((bonus: any, index: number) => (
                   <div 
                     key={bonus.id}
-                    className={`flex-shrink-0 w-64 h-32 rounded-lg border-2 transition-all ${
+                    className={`w-full h-20 rounded-lg border-2 transition-all ${
                       bonus.isPlayed 
                         ? 'bg-green-900/30 border-green-500' 
                         : bonus === nextBonus 
@@ -160,52 +153,56 @@ export default function LiveOBSOverlay() {
                           : 'bg-gray-900/30 border-gray-700'
                     }`}
                   >
-                    <div className="p-4 h-full flex flex-col">
+                    <div className="p-4 h-full flex items-center gap-6">
                       {/* Slot Number */}
-                      <div className={`text-center text-lg font-bold mb-2 ${
+                      <div className={`text-2xl font-bold w-16 text-center ${
                         bonus.isPlayed ? 'text-green-400' : 
                         bonus === nextBonus ? 'text-yellow-400' : 'text-gray-400'
                       }`}>
                         #{bonus.order}
                       </div>
                       
-                      {/* Slot Image and Info */}
-                      <div className="flex gap-3 flex-1">
-                        <div className="w-16 h-20 bg-gray-700 rounded overflow-hidden flex-shrink-0">
-                          {bonus.imageUrl ? (
-                            <img
-                              src={bonus.imageUrl}
-                              alt={bonus.slotName}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">
-                              No image
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-white font-medium text-sm truncate">{bonus.slotName}</div>
-                          <div className="text-gray-400 text-xs truncate">{bonus.provider}</div>
-                          <div className="text-green-400 text-sm mt-1">
-                            {formatCurrency(Number(bonus.betAmount), hunt.currency as Currency)}
+                      {/* Slot Image */}
+                      <div className="w-16 h-12 bg-gray-700 rounded overflow-hidden flex-shrink-0">
+                        {bonus.imageUrl ? (
+                          <img
+                            src={bonus.imageUrl}
+                            alt={bonus.slotName}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">
+                            No image
                           </div>
-                          {bonus.isPlayed && (
-                            <div className="text-white font-bold text-sm">
-                              {formatCurrency(Number(bonus.winAmount || 0), hunt.currency as Currency)}
-                            </div>
-                          )}
-                        </div>
+                        )}
                       </div>
                       
-                      {/* Status */}
-                      <div className="text-center mt-2">
+                      {/* Slot Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-white font-medium text-lg truncate">{bonus.slotName}</div>
+                        <div className="text-gray-400 text-sm truncate">{bonus.provider}</div>
+                      </div>
+                      
+                      {/* Bet Amount */}
+                      <div className="text-green-400 text-lg font-mono">
+                        {formatCurrency(Number(bonus.betAmount), hunt.currency as Currency)}
+                      </div>
+                      
+                      {/* Payout and Status */}
+                      <div className="w-32 text-right">
                         {bonus.isPlayed ? (
-                          <span className="text-green-400 text-xs font-medium">PLAYED</span>
+                          <div>
+                            <div className="text-white font-bold text-lg">
+                              {formatCurrency(Number(bonus.winAmount || 0), hunt.currency as Currency)}
+                            </div>
+                            <div className="text-yellow-400 text-sm">
+                              {Number(bonus.multiplier || 0).toFixed(2)}x
+                            </div>
+                          </div>
                         ) : bonus === nextBonus ? (
-                          <span className="text-yellow-400 text-xs font-medium">NEXT</span>
+                          <span className="text-yellow-400 text-lg font-medium animate-pulse">NEXT</span>
                         ) : (
-                          <span className="text-gray-500 text-xs">WAITING</span>
+                          <span className="text-gray-500 text-lg">WAITING</span>
                         )}
                       </div>
                     </div>
