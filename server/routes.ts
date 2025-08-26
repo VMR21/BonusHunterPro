@@ -219,6 +219,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update bonus (public access)
+  app.put("/api/bonuses/:id", async (req, res) => {
+    try {
+      const bonus = await storage.updateBonus(req.params.id, req.body);
+      if (!bonus) {
+        return res.status(404).json({ message: "Bonus not found" });
+      }
+      res.json(bonus);
+    } catch (error) {
+      console.error('Error updating bonus:', error);
+      res.status(500).json({ message: "Failed to update bonus" });
+    }
+  });
+
   app.put("/api/admin/bonuses/:id", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const bonus = await storage.updateBonus(req.params.id, req.body);
@@ -245,7 +259,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Start playing functionality (admin only)
+  // Start playing functionality (public access)
+  app.post("/api/hunts/:id/start-playing", async (req, res) => {
+    try {
+      const hunt = await storage.updateHunt(req.params.id, { 
+        isPlaying: true,
+        currentSlotIndex: 0 
+      });
+      if (!hunt) {
+        return res.status(404).json({ message: "Hunt not found" });
+      }
+      res.json(hunt);
+    } catch (error) {
+      console.error('Error starting hunt:', error);
+      res.status(500).json({ message: "Failed to start hunt" });
+    }
+  });
+
+  // Start playing functionality (admin only - backwards compatibility)
   app.post("/api/admin/hunts/:id/start-playing", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const hunt = await storage.updateHunt(req.params.id, { 
@@ -262,7 +293,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Payout endpoint (admin only)
+  // Payout endpoint (public access)
+  app.post("/api/bonuses/:id/payout", async (req, res) => {
+    try {
+      const { winAmount } = payoutSchema.parse(req.body);
+      const bonus = await storage.getBonus(req.params.id);
+      
+      if (!bonus) {
+        return res.status(404).json({ message: "Bonus not found" });
+      }
+
+      // Calculate multiplier
+      const betAmount = Number(bonus.betAmount);
+      const multiplier = betAmount > 0 ? winAmount / betAmount : 0;
+
+      const updatedBonus = await storage.updateBonus(req.params.id, {
+        winAmount: winAmount.toString(),
+        multiplier: multiplier.toString(),
+        isPlayed: true
+      });
+
+      // Update hunt totals
+      const hunt = await storage.getHunt(bonus.huntId);
+      if (hunt) {
+        const allBonuses = await storage.getBonusesByHuntId(bonus.huntId);
+        const totalWon = allBonuses.reduce((sum, b) => sum + (Number(b.winAmount) || 0), 0);
+        
+        await storage.updateHunt(bonus.huntId, {
+          totalWon: totalWon.toString()
+        });
+      }
+
+      res.json(updatedBonus);
+    } catch (error) {
+      console.error('Error processing payout:', error);
+      res.status(400).json({ message: "Invalid payout data", error: error.message });
+    }
+  });
+
+  // Payout endpoint (admin only - backwards compatibility)
   app.post("/api/admin/bonuses/:id/payout", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const { winAmount } = payoutSchema.parse(req.body);

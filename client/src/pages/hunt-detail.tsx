@@ -14,8 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useHunt } from "@/hooks/use-hunts";
 import { useBonuses } from "@/hooks/use-bonuses";
-import { useAdmin } from "@/hooks/use-admin";
-import { useAdminRequest } from "@/hooks/use-admin";
+
 import { formatCurrency } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -31,18 +30,27 @@ export default function HuntDetailPage() {
   
   const { data: hunt, isLoading: huntLoading } = useHunt(id!);
   const { data: bonuses, isLoading: bonusesLoading } = useBonuses(id!);
-  const { isAdmin } = useAdmin();
-  const { request } = useAdminRequest();
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Edit bet amount mutation
   const editBetMutation = useMutation({
     mutationFn: async ({ bonusId, betAmount }: { bonusId: string; betAmount: string }) => {
-      return request(`/api/admin/bonuses/${bonusId}`, {
+      const response = await fetch(`/api/bonuses/${bonusId}`, {
         method: 'PUT',
-        body: { betAmount },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ betAmount }),
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update bet amount' }));
+        throw new Error(errorData.message || 'Failed to update bet amount');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/hunts/${id}/bonuses`] });
@@ -163,19 +171,15 @@ export default function HuntDetailPage() {
             <Badge className={statusColors[hunt.status as keyof typeof statusColors]}>
               {hunt.status}
             </Badge>
-            {isAdmin && (
-              <>
-                <StartPlayingButton hunt={hunt} bonuses={bonuses || []} />
-                <Button 
-                  onClick={() => setAddBonusModalOpen(true)}
-                  className="bg-primary hover:bg-primary/90"
-                  data-testid="button-add-bonus"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Bonus
-                </Button>
-              </>
-            )}
+            <StartPlayingButton hunt={hunt} bonuses={bonuses || []} />
+            <Button 
+              onClick={() => setAddBonusModalOpen(true)}
+              className="bg-primary hover:bg-primary/90"
+              data-testid="button-add-bonus"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Bonus
+            </Button>
           </div>
         </div>
       </div>
@@ -199,14 +203,14 @@ export default function HuntDetailPage() {
               <div className="flex justify-between">
                 <span className="text-gray-400">Start Balance:</span>
                 <span className="text-green-400">
-                  {formatCurrency(hunt.startBalance, hunt.currency as Currency)}
+                  {formatCurrency(Number(hunt.startBalance), hunt.currency as Currency)}
                 </span>
               </div>
               {hunt.endBalance && (
                 <div className="flex justify-between">
                   <span className="text-gray-400">End Balance:</span>
                   <span className="text-green-400">
-                    {formatCurrency(hunt.endBalance, hunt.currency as Currency)}
+                    {formatCurrency(Number(hunt.endBalance), hunt.currency as Currency)}
                   </span>
                 </div>
               )}
@@ -295,7 +299,7 @@ export default function HuntDetailPage() {
                       <TableHead className="text-gray-400">Bet</TableHead>
                       <TableHead className="text-gray-400">Multiplier</TableHead>
                       <TableHead className="text-gray-400">Win</TableHead>
-                      {isAdmin && <TableHead className="text-gray-400">Actions</TableHead>}
+                      <TableHead className="text-gray-400">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -304,7 +308,7 @@ export default function HuntDetailPage() {
                         key={bonus.id} 
                         className={`hover:bg-white/5 ${bonus.isPlayed ? 'bg-green-900/20' : hunt.isPlaying && !bonus.isPlayed ? 'bg-blue-900/20 cursor-pointer' : 'bg-gray-900/20'}`}
                         onClick={() => {
-                          if (hunt.isPlaying && !bonus.isPlayed && isAdmin) {
+                          if (hunt.isPlaying && !bonus.isPlayed) {
                             // The click handler is in StartPlayingButton component
                           }
                         }}
@@ -353,26 +357,24 @@ export default function HuntDetailPage() {
                         <TableCell className="text-green-400">
                           {bonus.winAmount ? formatCurrency(Number(bonus.winAmount), hunt.currency as Currency) : '-'}
                         </TableCell>
-                        {isAdmin && (
-                          <TableCell>
-                            {!hunt.isPlaying && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedBonus(bonus);
-                                  setEditBetAmount(bonus.betAmount);
-                                  setShowEditBetModal(true);
-                                }}
-                                className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
-                                data-testid={`button-edit-bet-${bonus.id}`}
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                            )}
-                          </TableCell>
-                        )}
+                        <TableCell>
+                          {!hunt.isPlaying && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedBonus(bonus);
+                                setEditBetAmount(bonus.betAmount);
+                                setShowEditBetModal(true);
+                              }}
+                              className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
+                              data-testid={`button-edit-bet-${bonus.id}`}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

@@ -54,23 +54,23 @@ A comprehensive bonus hunting platform for slot machine enthusiasts and streamer
 - Real-time progress tracking
 - OBS integration for streaming
 
-## Admin Features (API Key Protected)
+## Key Features Available to All Users
 - **Hunt Management**: Create, edit, and delete bonus hunts
 - **Gameplay Control**: Start playing sessions and record payouts
 - **Payout Recording**: Click bonuses to input win amounts with automatic multiplier calculation
-- **OBS Overlay Access**: Protected streaming overlay URLs
-- **Session Management**: Secure login/logout with 24-hour session expiry
+- **OBS Overlay Access**: Streaming overlay URLs accessible to all
+- **Edit Functionality**: Edit bet amounts and hunt details without restrictions
 
 ## Recent Changes
 - **Database Migration**: Migrated from SQLite to PostgreSQL for enhanced performance (Jan 2025)
-- **Admin Authentication**: Implemented comprehensive JWT-based session system with Bearer tokens
-- **Bug Fixes**: Fixed authentication system using JWT Bearer tokens instead of API keys (Aug 2025)
-- **Form Validation**: Fixed hunt/bonus creation forms to use proper string/boolean types (Aug 2025) 
-- **Delete Functionality**: Added delete hunt option for admin users with confirmation (Aug 2025)
+- **Admin Authentication Removal**: Removed admin authentication system in favor of existing login system (Aug 2025)
+- **Public API Access**: Made all functionality accessible without admin requirements (Aug 2025)
+- **Bug Fixes**: Fixed slot image display by correcting CSV field mapping from "image" to "imageUrl" (Aug 2025)
+- **Button Functionality**: All buttons now have proper URL/API functionality without admin restrictions (Aug 2025)
 - **UI Improvements**: Fixed image loading errors and null safety in latest-hunt page (Aug 2025)
 - **Gameplay Functionality**: Added "Start Playing" with payout recording and multiplier calculation
-- **Security Enhancement**: All admin routes now require authentication
-- **Slot Database**: Imported 3,376 slots with complete metadata
+- **Slot Database**: Imported 3,376 slots with complete metadata and real image URLs
+- **Backwards Compatibility**: Admin routes still available for legacy support
 
 ## Environment Variables
 - `ADMIN_KEY`: Required for admin authentication

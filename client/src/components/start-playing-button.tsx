@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useAdminRequest } from "@/hooks/use-admin";
+
 import { Play, DollarSign, Calculator, Edit } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import type { Hunt, Bonus } from "@shared/schema";
@@ -28,16 +28,26 @@ export function StartPlayingButton({ hunt, bonuses }: StartPlayingButtonProps) {
   const [selectedBonus, setSelectedBonus] = useState<Bonus | null>(null);
   const [winAmount, setWinAmount] = useState("");
   const [editBetAmount, setEditBetAmount] = useState("");
-  const { request } = useAdminRequest();
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   // Start playing mutation
   const startPlayingMutation = useMutation({
     mutationFn: async () => {
-      return request(`/api/admin/hunts/${hunt.id}/start-playing`, {
+      const response = await fetch(`/api/hunts/${hunt.id}/start-playing`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to start hunt' }));
+        throw new Error(errorData.message || 'Failed to start hunt');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/hunts/${hunt.id}`] });
@@ -59,10 +69,20 @@ export function StartPlayingButton({ hunt, bonuses }: StartPlayingButtonProps) {
   // Edit bet amount mutation
   const editBetMutation = useMutation({
     mutationFn: async ({ bonusId, betAmount }: { bonusId: string; betAmount: string }) => {
-      return request(`/api/admin/bonuses/${bonusId}`, {
+      const response = await fetch(`/api/bonuses/${bonusId}`, {
         method: 'PUT',
-        body: { betAmount },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ betAmount }),
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update bet amount' }));
+        throw new Error(errorData.message || 'Failed to update bet amount');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/hunts/${hunt.id}/bonuses`] });
@@ -87,10 +107,20 @@ export function StartPlayingButton({ hunt, bonuses }: StartPlayingButtonProps) {
   // Payout mutation
   const payoutMutation = useMutation({
     mutationFn: async ({ bonusId, winAmount }: { bonusId: string; winAmount: number }) => {
-      return request(`/api/admin/bonuses/${bonusId}/payout`, {
+      const response = await fetch(`/api/bonuses/${bonusId}/payout`, {
         method: 'POST',
-        body: { winAmount },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ winAmount }),
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to record payout' }));
+        throw new Error(errorData.message || 'Failed to record payout');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/hunts/${hunt.id}/bonuses`] });
