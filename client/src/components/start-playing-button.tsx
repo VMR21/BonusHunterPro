@@ -37,10 +37,12 @@ export function StartPlayingButton({ hunt, bonuses }: StartPlayingButtonProps) {
   // Start playing mutation
   const startPlayingMutation = useMutation({
     mutationFn: async () => {
+      const sessionToken = localStorage.getItem('adminSessionToken');
       const response = await fetch(`/api/hunts/${hunt.id}/start-playing`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`,
         },
       });
       
@@ -53,6 +55,9 @@ export function StartPlayingButton({ hunt, bonuses }: StartPlayingButtonProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/hunts/${hunt.id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/hunts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/live-hunts'] });
       toast({
         title: "Hunt Started",
         description: "You can now record payouts for bonuses",
