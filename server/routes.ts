@@ -636,6 +636,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Raffle control routes
+  app.post("/api/raffles/:id/start", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const raffle = await storage.updateRaffle(req.params.id, { 
+        status: "active",
+        startTime: new Date()
+      });
+      if (!raffle) {
+        return res.status(404).json({ message: "Raffle not found" });
+      }
+      res.json(raffle);
+    } catch (error) {
+      console.error("Error starting raffle:", error);
+      res.status(500).json({ message: "Failed to start raffle" });
+    }
+  });
+
+  app.post("/api/raffles/:id/pause", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const raffle = await storage.updateRaffle(req.params.id, { status: "paused" });
+      if (!raffle) {
+        return res.status(404).json({ message: "Raffle not found" });
+      }
+      res.json(raffle);
+    } catch (error) {
+      console.error("Error pausing raffle:", error);
+      res.status(500).json({ message: "Failed to pause raffle" });
+    }
+  });
+
+  app.post("/api/raffles/:id/end", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const raffle = await storage.updateRaffle(req.params.id, { 
+        status: "ended",
+        endTime: new Date()
+      });
+      if (!raffle) {
+        return res.status(404).json({ message: "Raffle not found" });
+      }
+      res.json(raffle);
+    } catch (error) {
+      console.error("Error ending raffle:", error);
+      res.status(500).json({ message: "Failed to end raffle" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

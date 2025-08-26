@@ -386,7 +386,7 @@ export class DatabaseStorage implements IStorage {
   // Meta methods
   async getMeta(key: string): Promise<string | undefined> {
     const result = await db.select().from(meta).where(eq(meta.key, key)).limit(1);
-    return result[0]?.value;
+    return result[0]?.value ?? undefined;
   }
 
   async setMeta(key: string, value: string): Promise<void> {
@@ -544,7 +544,7 @@ export class DatabaseStorage implements IStorage {
         updatedAt: raffles.updatedAt,
         endedAt: raffles.endedAt,
         entryCount: sql<number>`COUNT(DISTINCT ${raffleEntries.id})`.as("entryCount"),
-        winnerCount: sql<number>`COUNT(DISTINCT ${raffleWinners.id})`.as("winnerCount"),
+        actualWinnerCount: sql<number>`COUNT(DISTINCT ${raffleWinners.id})`.as("actualWinnerCount"),
         adminDisplayName: adminKeys.displayName,
       })
       .from(raffles)
@@ -577,7 +577,7 @@ export class DatabaseStorage implements IStorage {
     return result.map(row => ({
       ...row,
       entryCount: Number(row.entryCount || 0),
-      winnerCount: Number(row.winnerCount || 0),
+      actualWinnerCount: Number(row.actualWinnerCount || 0),
       adminDisplayName: row.adminDisplayName || "Unknown Admin"
     }));
   }
@@ -605,7 +605,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteRaffle(id: string): Promise<boolean> {
     const result = await db.delete(raffles).where(eq(raffles.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Raffle Entry methods
@@ -679,6 +679,8 @@ export class DatabaseStorage implements IStorage {
 
     return winners;
   }
+
+
 }
 
 export const storage = new DatabaseStorage();

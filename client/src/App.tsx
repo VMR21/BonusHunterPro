@@ -20,6 +20,7 @@ import TournamentPage from "@/pages/tournament";
 import AdminKeys from "@/pages/AdminKeys";
 import Profile from "@/pages/Profile";
 import Raffles from "@/pages/raffles";
+import RaffleOverlay from "@/pages/raffle-overlay";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/slot-picker" component={SlotPickerPage} />
       <Route path="/tournament" component={TournamentPage} />
       <Route path="/raffles" component={Raffles} />
+      <Route path="/raffle-overlay/:id" component={RaffleOverlay} />
 
       <Route path="/admin-keys" component={AdminKeys} />
       <Route path="/profile" component={Profile} />

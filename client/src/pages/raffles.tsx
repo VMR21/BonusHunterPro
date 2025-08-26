@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Gift, Users, Crown, Play, Pause, Square, Plus, Edit, Trash2, Trophy, MessageCircle, ExternalLink } from "lucide-react";
+import { Gift, Users, Crown, Play, Pause, Square, Plus, Edit, Trash2, Trophy, MessageCircle, ExternalLink, Clock, Eye, Timer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { Raffle, RaffleWithStats, RaffleEntry, InsertRaffle } from "@shared/schema";
@@ -140,6 +140,48 @@ export default function RafflesPage() {
         title: "Error",
         description: error.message || "Failed to delete raffle",
         variant: "destructive",
+      });
+    },
+  });
+
+  const startRaffleMutation = useMutation({
+    mutationFn: async (raffleId: string) => {
+      const response = await apiRequest("POST", `/api/raffles/${raffleId}/start`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/raffles"] });
+      toast({
+        title: "Success",
+        description: "Raffle started!",
+      });
+    },
+  });
+
+  const pauseRaffleMutation = useMutation({
+    mutationFn: async (raffleId: string) => {
+      const response = await apiRequest("POST", `/api/raffles/${raffleId}/pause`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/raffles"] });
+      toast({
+        title: "Success",
+        description: "Raffle paused!",
+      });
+    },
+  });
+
+  const endRaffleMutation = useMutation({
+    mutationFn: async (raffleId: string) => {
+      const response = await apiRequest("POST", `/api/raffles/${raffleId}/end`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/raffles"] });
+      toast({
+        title: "Success",
+        description: "Raffle ended!",
       });
     },
   });
@@ -371,6 +413,59 @@ export default function RafflesPage() {
                           <p className="text-muted-foreground mt-1">{raffle.description}</p>
                         </div>
                         <div className="flex gap-2">
+                          {/* Raffle Controls */}
+                          {raffle.status === "draft" && (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => startRaffleMutation.mutate(raffle.id)}
+                              disabled={startRaffleMutation.isPending}
+                              data-testid={`button-start-${raffle.id}`}
+                            >
+                              <Play className="w-4 h-4 mr-1" />
+                              Start
+                            </Button>
+                          )}
+                          
+                          {raffle.status === "active" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => pauseRaffleMutation.mutate(raffle.id)}
+                              disabled={pauseRaffleMutation.isPending}
+                              data-testid={`button-pause-${raffle.id}`}
+                            >
+                              <Pause className="w-4 h-4 mr-1" />
+                              Pause
+                            </Button>
+                          )}
+                          
+                          {raffle.status === "paused" && (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => startRaffleMutation.mutate(raffle.id)}
+                              disabled={startRaffleMutation.isPending}
+                              data-testid={`button-resume-${raffle.id}`}
+                            >
+                              <Play className="w-4 h-4 mr-1" />
+                              Resume
+                            </Button>
+                          )}
+                          
+                          {raffle.status !== "ended" && (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => endRaffleMutation.mutate(raffle.id)}
+                              disabled={endRaffleMutation.isPending}
+                              data-testid={`button-end-${raffle.id}`}
+                            >
+                              <Square className="w-4 h-4 mr-1" />
+                              End
+                            </Button>
+                          )}
+
                           <Button
                             variant="outline"
                             size="sm"
@@ -380,6 +475,23 @@ export default function RafflesPage() {
                             <Users className="w-4 h-4 mr-1" />
                             {raffle.entryCount} Entries
                           </Button>
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            asChild
+                            data-testid={`button-obs-overlay-${raffle.id}`}
+                          >
+                            <a
+                              href={`/raffle-overlay/${raffle.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <Eye className="w-4 h-4 mr-1" />
+                              OBS Overlay
+                            </a>
+                          </Button>
+                          
                           <Button
                             variant="outline"
                             size="sm"
