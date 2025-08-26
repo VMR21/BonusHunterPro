@@ -258,6 +258,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/slots/search", async (req, res) => {
+    try {
+      const { q } = req.query;
+      if (!q || typeof q !== 'string') {
+        return res.json([]);
+      }
+      
+      const slots = await storage.searchSlots(q);
+      res.json(slots);
+    } catch (error) {
+      console.error('Error searching slots:', error);
+      res.status(500).json({ error: "Failed to search slots" });
+    }
+  });
+
+  app.get("/api/slots/:name", async (req, res) => {
+    try {
+      const slot = await storage.getSlotByName(decodeURIComponent(req.params.name));
+      if (!slot) {
+        return res.status(404).json({ error: "Slot not found" });
+      }
+      res.json(slot);
+    } catch (error) {
+      console.error('Error fetching slot:', error);
+      res.status(500).json({ error: "Failed to fetch slot" });
+    }
+  });
+
   // Stats routes
   app.get("/api/stats", optionalAdmin, async (req: AuthenticatedRequest, res) => {
     try {

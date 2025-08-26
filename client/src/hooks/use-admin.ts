@@ -37,19 +37,7 @@ export function useAdmin() {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (adminKey: string) => {
-      const response = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ adminKey }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Login failed' }));
-        throw new Error(errorData.error || 'Login failed');
-      }
-      
+      const response = await apiRequest("POST", "/api/admin/login", { adminKey });
       return response.json();
     },
     onSuccess: (data) => {

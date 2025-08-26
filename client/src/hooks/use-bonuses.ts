@@ -14,8 +14,7 @@ export function useCreateBonus() {
   
   return useMutation({
     mutationFn: async (bonus: InsertBonus) => {
-      const response = await apiRequest("POST", "/api/admin/bonuses", bonus);
-      return response.json();
+      return await apiRequest("POST", `/api/hunts/${bonus.huntId}/bonuses`, bonus);
     },
     onSuccess: (_, { huntId }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/hunts", huntId, "bonuses"] });
@@ -28,7 +27,7 @@ export function useUpdateBonus() {
   
   return useMutation({
     mutationFn: async ({ id, huntId, ...data }: { id: string; huntId: string } & Partial<Bonus>) => {
-      const response = await apiRequest("PUT", `/api/admin/bonuses/${id}`, data);
+      const response = await apiRequest("PUT", `/api/bonuses/${id}`, data);
       return response.json();
     },
     onSuccess: (_, { huntId }) => {
@@ -42,7 +41,7 @@ export function useDeleteBonus() {
   
   return useMutation({
     mutationFn: async ({ id, huntId }: { id: string; huntId: string }) => {
-      await apiRequest("DELETE", `/api/admin/bonuses/${id}`);
+      await apiRequest("DELETE", `/api/bonuses/${id}`);
     },
     onSuccess: (_, { huntId }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/hunts", huntId, "bonuses"] });
