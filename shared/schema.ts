@@ -81,6 +81,7 @@ export const adminLoginSchema = z.object({
 
 export type InsertHunt = z.infer<typeof insertHuntSchema>;
 export type Hunt = typeof hunts.$inferSelect;
+export type HuntWithBonusCount = Hunt & { bonusCount: number };
 export type InsertBonus = z.infer<typeof insertBonusSchema>;
 export type Bonus = typeof bonuses.$inferSelect;
 export type InsertSlot = z.infer<typeof insertSlotSchema>;

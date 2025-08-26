@@ -44,7 +44,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/hunts", async (req, res) => {
     try {
       const hunts = await storage.getHunts();
-      res.json(hunts);
+      // Add bonus count to each hunt
+      const huntsWithBonusCount = await Promise.all(
+        hunts.map(async (hunt) => {
+          const bonuses = await storage.getBonusesByHuntId(hunt.id);
+          return {
+            ...hunt,
+            bonusCount: bonuses.length
+          };
+        })
+      );
+      res.json(huntsWithBonusCount);
     } catch (error) {
       console.error('Error fetching hunts:', error);
       res.status(500).json({ message: "Failed to fetch hunts" });

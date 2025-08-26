@@ -125,7 +125,7 @@ export default function HuntsPage() {
         {hunts && hunts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {hunts.map((hunt) => (
-              <HuntCard key={hunt.id} hunt={hunt} />
+              <HuntCard key={hunt.id} hunt={hunt} bonusCount={(hunt as any).bonusCount || 0} />
             ))}
           </div>
         ) : (
