@@ -44,10 +44,11 @@ export default function AdminKeys() {
 
   const createKeyMutation = useMutation({
     mutationFn: async (keyData: typeof newKey) => {
-      return await apiRequest("/api/admin/keys", {
+      const response = await apiRequest("/api/admin/keys", {
         method: "POST",
         body: JSON.stringify(keyData),
       });
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/keys"] });
@@ -69,10 +70,11 @@ export default function AdminKeys() {
 
   const updateKeyMutation = useMutation({
     mutationFn: async ({ id, ...data }: EditingKey) => {
-      return await apiRequest(`/api/admin/keys/${id}`, {
+      const response = await apiRequest(`/api/admin/keys/${id}`, {
         method: "PUT",
         body: JSON.stringify(data),
       });
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/keys"] });
@@ -93,9 +95,10 @@ export default function AdminKeys() {
 
   const deleteKeyMutation = useMutation({
     mutationFn: async (keyId: string) => {
-      return await apiRequest(`/api/admin/keys/${keyId}`, {
+      const response = await apiRequest(`/api/admin/keys/${keyId}`, {
         method: "DELETE",
       });
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/keys"] });

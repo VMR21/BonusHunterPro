@@ -73,8 +73,9 @@ export function useAuth() {
         body: JSON.stringify({ adminKey }),
       });
 
-      if (response.sessionToken) {
-        localStorage.setItem('adminSessionToken', response.sessionToken);
+      const data = await response.json();
+      if (data.sessionToken) {
+        localStorage.setItem('adminSessionToken', data.sessionToken);
         await checkAuthStatus(); // Refresh auth state
         return { success: true };
       } else {
