@@ -11,12 +11,18 @@ import OBSOverlayPage from "@/pages/obs-overlay";
 import LiveOBSOverlay from "@/pages/live-obs-overlay";
 import LatestHuntPage from "@/pages/latest-hunt";
 import PublicHuntPage from "@/pages/public-hunt";
+import LiveHunts from "@/pages/LiveHunts";
+import MyHunts from "@/pages/MyHunts";
+import Profile from "@/pages/Profile";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={HuntsPage} />
+      <Route path="/live" component={LiveHunts} />
+      <Route path="/my-hunts" component={MyHunts} />
+      <Route path="/profile" component={Profile} />
       <Route path="/hunts/:id" component={HuntDetailPage} />
       <Route path="/admin" component={AdminPage} />
       <Route path="/obs" component={OBSOverlayPage} />

@@ -3,13 +3,49 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertHuntSchema, insertBonusSchema, payoutSchema, adminLoginSchema } from "@shared/schema";
 import { requireAdmin, createAdminSession, checkAdminSession, type AuthenticatedRequest } from "./auth";
+import { setupGoogleAuth, requireAuth, optionalAuth } from "./google-auth";
 import { updateHuntStatus } from "./hunt-status";
 import { randomUUID } from 'crypto';
 import fs from 'fs';
 import { parse } from 'csv-parse/sync';
+import passport from 'passport';
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Admin authentication endpoint
+  // Setup Google authentication
+  setupGoogleAuth(app);
+
+  // Google OAuth routes
+  app.get('/auth/google',
+    passport.authenticate('google', { scope: ['profile', 'email'] })
+  );
+
+  app.get('/auth/google/callback',
+    passport.authenticate('google', { failureRedirect: '/' }),
+    (req, res) => {
+      res.redirect('/');
+    }
+  );
+
+  app.post('/auth/logout', (req, res) => {
+    req.logout((err) => {
+      if (err) {
+        console.error('Logout error:', err);
+        return res.status(500).json({ error: 'Failed to logout' });
+      }
+      res.json({ message: 'Logged out successfully' });
+    });
+  });
+
+  // Check authentication status
+  app.get('/api/user', optionalAuth, (req: any, res) => {
+    if (req.user) {
+      res.json(req.user);
+    } else {
+      res.status(401).json({ error: 'Not authenticated' });
+    }
+  });
+
+  // Admin authentication endpoint (legacy support)
   app.post("/api/admin/login", async (req, res) => {
     try {
       const { adminKey } = adminLoginSchema.parse(req.body);
@@ -40,7 +76,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ isAdmin: isValid });
   });
 
-  // Public routes
+  // Public routes - Live hunts (with users)
+  app.get("/api/live-hunts", async (req, res) => {
+    try {
+      const liveHunts = await storage.getLiveHunts();
+      res.json(liveHunts);
+    } catch (error) {
+      console.error('Error fetching live hunts:', error);
+      res.status(500).json({ message: "Failed to fetch live hunts" });
+    }
+  });
+
+  // All hunts (with users for social features)
+  app.get("/api/hunts-with-users", async (req, res) => {
+    try {
+      const hunts = await storage.getHuntsWithUsers();
+      res.json(hunts);
+    } catch (error) {
+      console.error('Error fetching hunts with users:', error);
+      res.status(500).json({ message: "Failed to fetch hunts with users" });
+    }
+  });
+
+  // Legacy endpoint for backward compatibility
   app.get("/api/hunts", async (req, res) => {
     try {
       const hunts = await storage.getHunts();
@@ -168,11 +226,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Protected admin routes
+  // User's own hunts (requires authentication)
+  app.get("/api/my-hunts", requireAuth, async (req: any, res) => {
+    try {
+      const hunts = await storage.getUserHunts(req.user.id);
+      // Add bonus count to each hunt
+      const huntsWithBonusCount = await Promise.all(
+        hunts.map(async (hunt) => {
+          const bonuses = await storage.getBonusesByHuntId(hunt.id);
+          return {
+            ...hunt,
+            bonusCount: bonuses.length
+          };
+        })
+      );
+      res.json(huntsWithBonusCount);
+    } catch (error) {
+      console.error('Error fetching user hunts:', error);
+      res.status(500).json({ message: "Failed to fetch user hunts" });
+    }
+  });
+
+  // Create hunt (requires authentication)
+  app.post("/api/hunts", requireAuth, async (req: any, res) => {
+    try {
+      const huntData = insertHuntSchema.parse(req.body);
+      const hunt = await storage.createHunt(huntData, req.user.id);
+      
+      // Generate public token immediately
+      const publicToken = randomUUID();
+      await storage.updateHunt(hunt.id, { 
+        publicToken, 
+        isPublic: true 
+      });
+      
+      // Return hunt with links
+      const response = {
+        ...hunt,
+        publicToken,
+        publicUrl: `${req.protocol}://${req.get('host')}/public-hunt/${publicToken}`,
+        obsUrl: `${req.protocol}://${req.get('host')}/obs-overlay/latest`
+      };
+      
+      res.status(201).json(response);
+    } catch (error) {
+      console.error('Error creating hunt:', error);
+      res.status(400).json({ message: "Failed to create hunt" });
+    }
+  });
+
+  // Protected admin routes (legacy support)
   app.post("/api/admin/hunts", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const huntData = insertHuntSchema.parse(req.body);
-      const hunt = await storage.createHunt(huntData);
+      // For admin routes, use the admin user ID
+      const adminUser = await storage.getUserByEmail('admin@bonushunter.app');
+      const hunt = await storage.createHunt(huntData, adminUser!.id);
       
       // Generate public token immediately
       const publicToken = randomUUID();

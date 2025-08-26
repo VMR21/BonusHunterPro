@@ -1,20 +1,28 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Dice6, Trophy, Settings, Eye, Key, LogOut } from "lucide-react";
+import { Dice6, Trophy, Settings, Eye, Key, LogOut, Users } from "lucide-react";
 import { useStats } from "@/hooks/use-hunts";
 import { useAdmin } from "@/hooks/use-admin";
+import { useAuth } from "@/hooks/useAuth";
 import { AdminLoginModal } from "@/components/admin-login-modal";
+import { LoginButton } from "@/components/LoginButton";
+import { UserMenu } from "@/components/UserMenu";
 import { Button } from "@/components/ui/button";
 
 export function Navigation() {
   const [location] = useLocation();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { data: stats } = useStats();
-  const { isAdmin, logout } = useAdmin();
+  const { isAdmin, logout: adminLogout } = useAdmin();
+  const { isAuthenticated } = useAuth();
 
-  // Only show admin-only routes to authenticated admins
+  // Navigation items based on authentication status
   const navItems = [
     { path: "/", label: "Hunts", icon: Trophy },
+    { path: "/live", label: "Live Hunts", icon: Users },
+    ...(isAuthenticated ? [
+      { path: "/my-hunts", label: "My Hunts", icon: Trophy },
+    ] : []),
     ...(isAdmin ? [
       { path: "/obs", label: "OBS Overlay", icon: Eye },
     ] : []),
@@ -51,6 +59,14 @@ export function Navigation() {
               <span>{stats?.totalHunts || 0}</span> Hunts Created
             </div>
             
+            {/* User Authentication Section */}
+            {isAuthenticated ? (
+              <UserMenu />
+            ) : (
+              <LoginButton />
+            )}
+            
+            {/* Admin Section (separate from user auth) */}
             {isAdmin ? (
               <>
                 <Link href="/admin">
@@ -65,12 +81,12 @@ export function Navigation() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={logout}
+                  onClick={adminLogout}
                   className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
-                  data-testid="button-logout"
+                  data-testid="button-admin-logout"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
-                  Logout
+                  Admin Logout
                 </Button>
               </>
             ) : (

@@ -1,14 +1,24 @@
-import { hunts, bonuses, slotDatabase, meta, adminSessions } from "@shared/schema";
-import type { Hunt, InsertHunt, Bonus, InsertBonus, Slot, InsertSlot, Meta, AdminSession } from "@shared/schema";
+import { hunts, bonuses, slotDatabase, meta, adminSessions, users } from "@shared/schema";
+import type { Hunt, InsertHunt, Bonus, InsertBonus, Slot, InsertSlot, Meta, AdminSession, User, InsertUser, HuntWithUser } from "@shared/schema";
 import { eq, desc, asc, sql } from "drizzle-orm";
 import { db } from "./db";
 
 export interface IStorage {
+  // Users
+  getUserById(id: string): Promise<User | undefined>;
+  getUserByGoogleId(googleId: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, user: Partial<User>): Promise<User | undefined>;
+
   // Hunts
   getHunts(): Promise<Hunt[]>;
+  getHuntsWithUsers(): Promise<HuntWithUser[]>;
+  getLiveHunts(): Promise<HuntWithUser[]>;
+  getUserHunts(userId: string): Promise<Hunt[]>;
   getHunt(id: string): Promise<Hunt | undefined>;
   getHuntByPublicToken(token: string): Promise<Hunt | undefined>;
-  createHunt(hunt: InsertHunt): Promise<Hunt>;
+  createHunt(hunt: InsertHunt, userId: string): Promise<Hunt>;
   updateHunt(id: string, hunt: Partial<Hunt>): Promise<Hunt | undefined>;
   deleteHunt(id: string): Promise<boolean>;
 
@@ -45,8 +55,74 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // User methods
+  async getUserById(id: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.googleId, googleId)).limit(1);
+    return result[0];
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    return result[0];
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const result = await db.insert(users).values(user).returning();
+    return result[0];
+  }
+
+  async updateUser(id: string, userUpdate: Partial<User>): Promise<User | undefined> {
+    const result = await db
+      .update(users)
+      .set({ ...userUpdate, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return result[0];
+  }
+
+  // Hunt methods
   async getHunts(): Promise<Hunt[]> {
     return await db.select().from(hunts).orderBy(desc(hunts.createdAt));
+  }
+
+  async getHuntsWithUsers(): Promise<HuntWithUser[]> {
+    const result = await db
+      .select()
+      .from(hunts)
+      .leftJoin(users, eq(hunts.userId, users.id))
+      .orderBy(desc(hunts.createdAt));
+    
+    return result.map(r => ({
+      ...r.hunts,
+      user: r.users || { id: '', email: 'unknown@user.com', name: 'Unknown User', profileImage: null, googleId: null, createdAt: new Date(), updatedAt: new Date() }
+    }));
+  }
+
+  async getLiveHunts(): Promise<HuntWithUser[]> {
+    const result = await db
+      .select()
+      .from(hunts)
+      .leftJoin(users, eq(hunts.userId, users.id))
+      .where(eq(hunts.isLive, true))
+      .orderBy(desc(hunts.updatedAt));
+    
+    return result.map(r => ({
+      ...r.hunts,
+      user: r.users || { id: '', email: 'unknown@user.com', name: 'Unknown User', profileImage: null, googleId: null, createdAt: new Date(), updatedAt: new Date() }
+    }));
+  }
+
+  async getUserHunts(userId: string): Promise<Hunt[]> {
+    return await db
+      .select()
+      .from(hunts)
+      .where(eq(hunts.userId, userId))
+      .orderBy(desc(hunts.createdAt));
   }
 
   async getHunt(id: string): Promise<Hunt | undefined> {
@@ -59,8 +135,8 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async createHunt(hunt: InsertHunt): Promise<Hunt> {
-    const result = await db.insert(hunts).values(hunt).returning();
+  async createHunt(hunt: InsertHunt, userId: string): Promise<Hunt> {
+    const result = await db.insert(hunts).values({ ...hunt, userId }).returning();
     return result[0];
   }
 
