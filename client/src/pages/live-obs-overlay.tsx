@@ -147,7 +147,7 @@ export default function LiveOBSOverlay() {
 
             <div className="relative overflow-hidden h-96">
               <div 
-                className={`space-y-3 ${bonuses.length > 1 ? 'animate-scroll' : ''}`}
+                className={`space-y-6 ${bonuses.length > 1 ? 'animate-scroll' : ''}`}
               >
                 {/* Duplicate bonuses for seamless scrolling */}
                 {[...bonuses, ...bonuses].map((bonus: any, index: number) => (
