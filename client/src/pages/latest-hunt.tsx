@@ -236,14 +236,14 @@ export default function LatestHuntPage() {
               <div className="flex justify-between">
                 <span className="text-gray-400">Start Balance:</span>
                 <span className="text-green-400">
-                  {formatCurrency(hunt.startBalance, hunt.currency as Currency)}
+                  {formatCurrency(Number(hunt.startBalance), hunt.currency as Currency)}
                 </span>
               </div>
               {hunt.endBalance && (
                 <div className="flex justify-between">
                   <span className="text-gray-400">End Balance:</span>
                   <span className="text-green-400">
-                    {formatCurrency(hunt.endBalance, hunt.currency as Currency)}
+                    {formatCurrency(Number(hunt.endBalance), hunt.currency as Currency)}
                   </span>
                 </div>
               )}
@@ -332,11 +332,11 @@ export default function LatestHuntPage() {
                         </TableCell>
                         <TableCell className="text-gray-400">{bonus.provider}</TableCell>
                         <TableCell className="text-white">
-                          {formatCurrency(bonus.betAmount, hunt.currency as Currency)}
+                          {formatCurrency(Number(bonus.betAmount), hunt.currency as Currency)}
                         </TableCell>
                         <TableCell className="text-green-400">
                           {bonus.winAmount !== null && bonus.winAmount !== undefined 
-                            ? formatCurrency(bonus.winAmount, hunt.currency as Currency) 
+                            ? formatCurrency(Number(bonus.winAmount), hunt.currency as Currency) 
                             : '-'
                           }
                         </TableCell>

@@ -88,23 +88,23 @@ export default function OBSOverlayPage() {
   const totalBonuses = bonuses.length;
   const progress = totalBonuses > 0 ? (openedBonuses.length / totalBonuses) * 100 : 0;
   
-  const totalCost = bonuses.reduce((sum, b) => sum + b.betAmount, 0);
-  const totalWin = openedBonuses.reduce((sum, b) => sum + (b.winAmount || 0), 0);
+  const totalCost = bonuses.reduce((sum, b) => sum + Number(b.betAmount), 0);
+  const totalWin = openedBonuses.reduce((sum, b) => sum + Number(b.winAmount || 0), 0);
   const avgMultiplier = openedBonuses.length > 0 
-    ? openedBonuses.reduce((sum, b) => sum + (b.multiplier || 0), 0) / openedBonuses.length 
+    ? openedBonuses.reduce((sum, b) => sum + Number(b.multiplier || 0), 0) / openedBonuses.length 
     : 0;
   const bex = totalCost > 0 ? totalCost / (totalBonuses > 0 ? totalBonuses : 1) : 0;
   const target = totalCost * 1.6; // Assuming 1.6x as break-even target
 
   const bestWin = openedBonuses.reduce((best, current) => {
-    const currentWin = current.winAmount || 0;
-    const bestWin = best?.winAmount || 0;
+    const currentWin = Number(current.winAmount || 0);
+    const bestWin = Number(best?.winAmount || 0);
     return currentWin > bestWin ? current : best;
   }, openedBonuses[0] || null);
 
   const bestMulti = openedBonuses.reduce((best, current) => {
-    const currentMulti = current.multiplier || 0;
-    const bestMulti = best?.multiplier || 0;
+    const currentMulti = Number(current.multiplier || 0);
+    const bestMulti = Number(best?.multiplier || 0);
     return currentMulti > bestMulti ? current : best;
   }, openedBonuses[0] || null);
 
@@ -192,28 +192,45 @@ export default function OBSOverlayPage() {
                   <TableHead className="text-gray-400 text-xs uppercase">BET</TableHead>
                   <TableHead className="text-gray-400 text-xs uppercase">MULTI</TableHead>
                   <TableHead className="text-gray-400 text-xs uppercase">WIN</TableHead>
+                  <TableHead className="text-gray-400 text-xs uppercase">STATUS</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {bonuses.slice(0, 8).map((bonus) => (
+                {bonuses.map((bonus) => (
                   <TableRow 
                     key={bonus.id}
                     className={`hover:bg-white/5 transition-colors ${
-                      bonus.status === 'waiting' ? 'bg-primary/20' : ''
+                      bonus.isPlayed ? 'bg-green-500/20' : 'bg-gray-500/20'
                     }`}
                   >
                     <TableCell className="text-gray-300 text-sm">{bonus.order}</TableCell>
                     <TableCell className="text-white text-sm font-medium">
-                      {bonus.slotName}
+                      <div className="flex items-center space-x-2">
+                        {bonus.slotImageUrl && (
+                          <img 
+                            src={bonus.slotImageUrl} 
+                            alt={bonus.slotName}
+                            className="w-6 h-6 rounded object-cover"
+                          />
+                        )}
+                        <span>{bonus.slotName}</span>
+                      </div>
                     </TableCell>
                     <TableCell className="text-white text-sm">
-                      {formatCurrency(bonus.betAmount, hunt.currency as Currency)}
+                      {formatCurrency(Number(bonus.betAmount), hunt.currency as Currency)}
                     </TableCell>
                     <TableCell className="text-yellow-400 text-sm">
-                      {bonus.multiplier ? `${bonus.multiplier}x` : '-'}
+                      {bonus.multiplier ? `${Number(bonus.multiplier).toFixed(2)}x` : '-'}
                     </TableCell>
                     <TableCell className="text-green-400 text-sm">
-                      {bonus.winAmount ? formatCurrency(bonus.winAmount, hunt.currency as Currency) : '-'}
+                      {bonus.winAmount ? formatCurrency(Number(bonus.winAmount), hunt.currency as Currency) : '-'}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        bonus.isPlayed ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+                      }`}>
+                        {bonus.isPlayed ? 'Played' : 'Pending'}
+                      </span>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -251,12 +268,46 @@ export default function OBSOverlayPage() {
               </div>
             </div>
           </div>
+
+          {/* Slots List */}
+          <div className="space-y-2 mb-4">
+            <div className="text-gray-400 text-sm text-center">Slots in Hunt</div>
+            <div className="max-h-40 overflow-y-auto space-y-1">
+              {bonuses.map((bonus) => (
+                <div 
+                  key={bonus.id} 
+                  className={`flex items-center justify-between p-2 rounded text-xs ${
+                    bonus.isPlayed ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    {bonus.slotImageUrl && (
+                      <img 
+                        src={bonus.slotImageUrl} 
+                        alt={bonus.slotName}
+                        className="w-4 h-4 rounded object-cover"
+                      />
+                    )}
+                    <span className="truncate">{bonus.slotName}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span>{formatCurrency(Number(bonus.betAmount), hunt.currency as Currency)}</span>
+                    {bonus.isPlayed && bonus.winAmount && (
+                      <span className="text-green-400">
+                        → {formatCurrency(Number(bonus.winAmount), hunt.currency as Currency)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
           
           {bestWin && (
             <div className="text-center border-t border-purple-800/30 pt-4">
               <div className="text-gray-400 text-sm">Best Win</div>
               <div className="text-yellow-400 font-bold">
-                {formatCurrency(bestWin.winAmount || 0, hunt.currency as Currency)}
+                {formatCurrency(Number(bestWin.winAmount || 0), hunt.currency as Currency)}
               </div>
               <div className="text-gray-400 text-xs">{bestWin.slotName}</div>
             </div>
