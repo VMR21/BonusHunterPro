@@ -14,6 +14,7 @@ import LatestHuntPage from "@/pages/latest-hunt";
 import PublicHuntPage from "@/pages/public-hunt";
 import LiveHuntsPage from "@/pages/live";
 import LatestHuntOverlay from "@/pages/latest-hunt-overlay";
+import SlotPickerPage from "@/pages/slot-picker";
 
 import AdminKeys from "@/pages/AdminKeys";
 import Profile from "@/pages/Profile";
@@ -24,6 +25,7 @@ function Router() {
     <Switch>
       <Route path="/" component={HuntsPage} />
       <Route path="/live" component={LiveHuntsPage} />
+      <Route path="/slot-picker" component={SlotPickerPage} />
 
       <Route path="/admin-keys" component={AdminKeys} />
       <Route path="/profile" component={Profile} />
