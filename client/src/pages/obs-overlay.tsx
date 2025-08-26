@@ -257,18 +257,10 @@ export default function OBSOverlayPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="text-center">
-              <div className="text-gray-400 text-sm">Total Win</div>
-              <div className="text-green-400 font-bold">
-                {formatCurrency(totalWin, hunt.currency as Currency)}
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-gray-400 text-sm">Total Cost</div>
-              <div className="text-white font-bold">
-                {formatCurrency(totalCost, hunt.currency as Currency)}
-              </div>
+          <div className="text-center mb-4">
+            <div className="text-gray-400 text-sm">Total Win</div>
+            <div className="text-green-400 font-bold">
+              {formatCurrency(totalWin, hunt.currency as Currency)}
             </div>
           </div>
 
