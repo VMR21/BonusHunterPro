@@ -225,6 +225,24 @@ export function StartPlayingButton({ hunt, bonuses }: StartPlayingButtonProps) {
               </p>
             </div>
           )}
+
+          {/* Total Payout Display */}
+          {bonuses.some(b => b.isPlayed) && (
+            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
+                <Calculator className="w-4 h-4" />
+                <span className="font-semibold">Total Payout</span>
+              </div>
+              <p className="text-sm text-purple-600 dark:text-purple-400 mt-1">
+                {formatCurrency(
+                  bonuses
+                    .filter(b => b.isPlayed && b.winAmount)
+                    .reduce((total, b) => total + Number(b.winAmount), 0),
+                  hunt.currency as Currency
+                )}
+              </p>
+            </div>
+          )}
         </div>
       )}
 

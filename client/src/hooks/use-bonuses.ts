@@ -61,7 +61,9 @@ export function useRecordPayout() {
       // Invalidate both bonuses and hunt data to ensure real-time updates
       queryClient.invalidateQueries({ queryKey: ["/api/hunts", huntId, "bonuses"] });
       queryClient.invalidateQueries({ queryKey: ["/api/hunts", huntId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/hunts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/live-hunts"] });
     },
   });
 }
