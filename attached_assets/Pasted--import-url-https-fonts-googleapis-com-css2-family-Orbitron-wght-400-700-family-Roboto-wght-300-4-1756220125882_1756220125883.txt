@@ -1,0 +1,518 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap'); /* cite: 1 */
+
+:root {
+    --bg-color: #0d0a20; /* cite: 1 */
+    --primary-color: #7a3bff; /* Purple */ /* cite: 1 */
+    --secondary-color: #00e0ff; /* Cyan */ /* cite: 1 */
+    --text-color: #e0e0e0; /* cite: 1 */
+    --input-bg: rgba(255, 255, 255, 0.08); /* cite: 1 */
+    --input-border: rgba(255, 255, 255, 0.2); /* cite: 1 */
+    --input-focus-border: var(--secondary-color); /* cite: 1 */
+    --glow-color: var(--secondary-color); /* cite: 1 */
+    --highlight-color: #ffee00; /* Yellow for winner */ /* cite: 1 */
+    --line-color: rgba(0, 224, 255, 0.5); /* Semi-transparent cyan */ /* cite: 1 */
+    --line-glow: #00e0ff; /* Bright cyan for line glow */ /* cite: 1 */
+}
+
+* {
+    box-sizing: border-box; /* cite: 1 */
+    margin: 0; /* cite: 1 */
+    padding: 0; /* cite: 1 */
+    font-family: 'Roboto', sans-serif; /* cite: 1 */
+}
+
+body {
+    background: linear-gradient(135deg, #0d0a20, #2a0b3b); /* cite: 1 */
+    color: var(--text-color); /* cite: 1 */
+    overflow: hidden; /* cite: 1 */
+    display: flex; /* cite: 1 */
+    justify-content: center; /* cite: 1 */
+    align-items: center; /* cite: 1 */
+    min-height: 100vh; /* cite: 1 */
+    padding: 20px; /* cite: 1 */
+    position: relative; /* cite: 1 */
+}
+
+/* Background Animation */
+.background-animation {
+    position: absolute; /* cite: 1 */
+    top: 0; /* cite: 1 */
+    left: 0; /* cite: 1 */
+    width: 100%; /* cite: 1 */
+    height: 100%; /* cite: 1 */
+    background: radial-gradient(circle at top left, rgba(122, 59, 255, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at bottom right, rgba(0, 224, 255, 0.15) 0%, transparent 40%); /* cite: 1 */
+    opacity: 0.7; /* cite: 1 */
+    animation: backgroundPulse 15s infinite alternate; /* cite: 1 */
+    z-index: -1; /* cite: 1 */
+}
+
+@keyframes backgroundPulse {
+    0% { transform: scale(1); opacity: 0.7; } /* cite: 1 */
+    50% { transform: scale(1.05); opacity: 0.8; } /* cite: 1 */
+    100% { transform: scale(1); opacity: 0.7; } /* cite: 1 */
+}
+
+.container {
+    background: rgba(13, 10, 32, 0.7); /* cite: 1 */
+    border-radius: 20px; /* cite: 1 */
+    padding: 40px; /* cite: 1 */
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5); /* cite: 1 */
+    display: flex; /* cite: 1 */
+    gap: 40px; /* Added gap back for sidebar */ /* cite: 1 */
+    position: relative; /* cite: 1 */
+    max-width: 1600px; /* cite: 1 */
+    width: 100%; /* cite: 1 */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* cite: 1 */
+    transform: translateY(20px); /* cite: 1 */
+    opacity: 0; /* cite: 1 */
+    animation: fadeInUp 1s forwards cubic-bezier(0.2, 0.8, 0.2, 1); /* cite: 1 */
+}
+
+@keyframes fadeInUp {
+    to { transform: translateY(0); opacity: 1; } /* cite: 1 */
+}
+
+.title {
+    font-family: 'Orbitron', sans-serif; /* cite: 1 */
+    font-size: 3.5em; /* cite: 1 */
+    font-weight: 700; /* cite: 1 */
+    color: var(--primary-color); /* cite: 1 */
+    text-shadow: 0 0 15px var(--primary-color), 0 0 30px rgba(122, 59, 255, 0.5); /* cite: 1 */
+    margin-bottom: 30px; /* cite: 1 */
+    position: absolute; /* cite: 1 */
+    top: -60px; /* cite: 1 */
+    left: 40px; /* cite: 1 */
+    letter-spacing: 2px; /* cite: 1 */
+    animation: textGlow 3s infinite alternate; /* cite: 1 */
+    z-index: 20; /* Ensure title is above everything */ /* cite: 1 */
+}
+
+.tournament-text {
+    font-size: 0.6em; /* cite: 1 */
+    display: block; /* cite: 1 */
+    color: var(--secondary-color); /* cite: 1 */
+    text-shadow: 0 0 10px var(--secondary-color); /* cite: 1 */
+    letter-spacing: 5px; /* cite: 1 */
+    margin-top: 5px; /* cite: 1 */
+}
+
+@keyframes textGlow {
+    0% { text-shadow: 0 0 15px var(--primary-color), 0 0 30px rgba(122, 59, 255, 0.5); } /* cite: 1 */
+    100% { text-shadow: 0 0 25px var(--primary-color), 0 0 40px rgba(122, 59, 255, 0.8); } /* cite: 1 */
+}
+
+.bracket-main-area {
+    flex-grow: 1; /* cite: 1 */
+    position: relative; /* cite: 1 */
+    padding-top: 80px; /* Space for title */ /* cite: 1 */
+    height: 600px; /* Fixed height to match SVG viewBox height */ /* cite: 1 */
+}
+
+.bracket-grid {
+    display: grid; /* cite: 1 */
+    /* Using fractional units and max-width for better responsiveness */
+    grid-template-columns: repeat(4, 1fr); /* cite: 1 */
+    gap: 20px 5%; /* Vertical gap, Horizontal gap (between columns) */ /* cite: 1 */
+    width: 100%; /* Take full width of bracket-main-area */ /* cite: 1 */
+    max-width: 900px; /* Limit overall bracket width for better appearance */ /* cite: 1 */
+    height: 100%; /* cite: 1 */
+    position: relative; /* cite: 1 */
+    z-index: 10; /* cite: 1 */
+    justify-content: center; /* cite: 1 */
+    align-items: center; /* cite: 1 */
+}
+
+.round {
+    display: flex; /* cite: 1 */
+    flex-direction: column; /* cite: 1 */
+    justify-content: space-around; /* Distribute matches evenly */ /* cite: 1 */
+    gap: 30px; /* Space between matches in a round */ /* cite: 1 */
+    height: 100%; /* Make rounds fill vertical space */ /* cite: 1 */
+    position: relative; /* cite: 1 */
+}
+
+/* IMPORTANT: Removed specific margin-top/bottom for each match.
+   The `justify-content: space-around` on `.round` and the `height: 100%`
+   on `.round` will handle vertical distribution automatically.
+   The SVG lines will likely need manual adjustment in `index.html`
+   if exact alignment is crucial, as their paths are hardcoded. */
+
+
+.match {
+    background: var(--input-bg); /* cite: 1 */
+    border: 1px solid var(--input-border); /* cite: 1 */
+    border-radius: 8px; /* cite: 1 */
+    padding: 10px; /* cite: 1 */
+    display: flex; /* cite: 1 */
+    flex-direction: column; /* cite: 1 */
+    align-items: center; /* cite: 1 */
+    gap: 5px; /* Reduced gap inside match */ /* cite: 1 */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); /* cite: 1 */
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease; /* cite: 1 */
+    width: 200px; /* Fixed width for all boxes */ /* cite: 1 */
+    height: 100px; /* Fixed height for all boxes */ /* cite: 1 */
+    justify-content: center; /* Center content vertically */ /* cite: 1 */
+    position: relative; /* For winner button positioning */ /* cite: 1 */
+}
+
+.match:hover {
+    transform: translateY(-5px); /* cite: 1 */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4); /* cite: 1 */
+    border-color: var(--glow-color); /* cite: 1 */
+}
+
+.player-entry {
+    display: flex; /* cite: 1 */
+    align-items: center; /* cite: 1 */
+    gap: 5px; /* cite: 1 */
+    width: 100%; /* cite: 1 */
+    justify-content: center; /* cite: 1 */
+}
+
+.player-input {
+    flex-grow: 1; /* cite: 1 */
+    padding: 5px 8px; /* Adjusted padding */ /* cite: 1 */
+    background: transparent; /* cite: 1 */
+    border: 1px solid var(--input-border); /* cite: 1 */
+    border-radius: 6px; /* cite: 1 */
+    color: var(--text-color); /* cite: 1 */
+    font-size: 0.9em; /* Slightly smaller font */ /* cite: 1 */
+    outline: none; /* cite: 1 */
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease; /* cite: 1 */
+    text-align: center; /* cite: 1 */
+    min-width: 0; /* Allow shrinking */ /* cite: 1 */
+}
+
+.multiplier-input {
+    width: 40px; /* Fixed width for multiplier */ /* cite: 1 */
+    padding: 5px 3px; /* cite: 1 */
+    background: transparent; /* cite: 1 */
+    border: 1px solid var(--input-border); /* cite: 1 */
+    border-radius: 6px; /* cite: 1 */
+    color: var(--text-color); /* cite: 1 */
+    font-size: 0.9em; /* cite: 1 */
+    outline: none; /* cite: 1 */
+    text-align: center; /* cite: 1 */
+    -moz-appearance: textfield; /* Hide arrows in Firefox */ /* cite: 1 */
+    transition: border-color 0.3s ease, box-shadow 0.3s ease; /* cite: 1 */
+}
+
+.multiplier-input::-webkit-outer-spin-button,
+.multiplier-input::-webkit-inner-spin-button {
+    -webkit-appearance: none; /* cite: 1 */
+    margin: 0; /* Hide arrows in Chrome, Safari, Edge */ /* cite: 1 */
+}
+
+
+.player-input::placeholder, .multiplier-input::placeholder {
+    color: rgba(255, 255, 255, 0.4); /* cite: 1 */
+}
+
+.player-input:focus, .multiplier-input:focus {
+    border-color: var(--input-focus-border); /* cite: 1 */
+    box-shadow: 0 0 10px var(--glow-color); /* cite: 1 */
+}
+
+/* Winner input specific style */
+.player-input.winner {
+    background: rgba(255, 255, 0, 0.1); /* Slightly yellow tint for winner */ /* cite: 1 */
+    color: var(--highlight-color); /* cite: 1 */
+    border-color: var(--highlight-color); /* cite: 1 */
+    text-shadow: 0 0 5px rgba(255, 255, 0, 0.7); /* cite: 1 */
+}
+.multiplier-input.winner {
+    background: rgba(255, 255, 0, 0.1); /* cite: 1 */
+    color: var(--highlight-color); /* cite: 1 */
+    border-color: var(--highlight-color); /* cite: 1 */
+}
+
+/* Final Winner Input */
+.final-winner-input {
+    font-weight: bold; /* cite: 1 */
+    font-size: 1.2em; /* cite: 1 */
+    color: var(--highlight-color); /* cite: 1 */
+    text-shadow: 0 0 10px var(--highlight-color), 0 0 20px rgba(255, 255, 0, 0.5); /* cite: 1 */
+    border-color: var(--highlight-color) !important; /* cite: 1 */
+    background: rgba(255, 255, 0, 0.15) !important; /* cite: 1 */
+}
+
+.final-winner-entry {
+    flex-direction: column; /* Ensure winner name is centered */ /* cite: 1 */
+    gap: 0; /* cite: 1 */
+}
+
+.vs-text {
+    font-size: 0.8em; /* cite: 1 */
+    color: rgba(255, 255, 255, 0.5); /* cite: 1 */
+    display: block; /* Always visible, just for styling */ /* cite: 1 */
+    margin: 2px 0; /* cite: 1 */
+}
+
+.decide-winner-btn {
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); /* cite: 1 */
+    border: none; /* cite: 1 */
+    border-radius: 5px; /* cite: 1 */
+    color: white; /* cite: 1 */
+    padding: 8px 15px; /* cite: 1 */
+    font-size: 0.85em; /* cite: 1 */
+    cursor: pointer; /* cite: 1 */
+    transition: all 0.3s ease; /* cite: 1 */
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3); /* cite: 1 */
+    text-transform: uppercase; /* cite: 1 */
+    font-weight: 700; /* cite: 1 */
+    letter-spacing: 0.5px; /* cite: 1 */
+    position: absolute; /* cite: 1 */
+    bottom: -20px; /* Position below the box */ /* cite: 1 */
+    left: 50%; /* cite: 1 */
+    transform: translateX(-50%); /* cite: 1 */
+    opacity: 0; /* Hidden by default */ /* cite: 1 */
+    pointer-events: none; /* Disable interaction when hidden */ /* cite: 1 */
+    z-index: 15; /* Ensure button is clickable */ /* cite: 1 */
+}
+
+.decide-winner-btn.active {
+    opacity: 1; /* cite: 1 */
+    pointer-events: all; /* cite: 1 */
+    animation: bounceIn 0.5s ease-out; /* cite: 1 */
+}
+
+.decide-winner-btn:hover {
+    transform: translateX(-50%) translateY(-2px); /* cite: 1 */
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.5); /* cite: 1 */
+    filter: brightness(1.1); /* cite: 1 */
+}
+
+.decide-winner-btn:active {
+    transform: translateX(-50%) translateY(0px); /* cite: 1 */
+    filter: brightness(0.9); /* cite: 1 */
+}
+
+.decide-winner-btn.match-completed {
+    background: #444; /* Greyed out when completed */ /* cite: 1 */
+    cursor: not-allowed; /* cite: 1 */
+    pointer-events: none; /* cite: 1 */
+    opacity: 0.6; /* cite: 1 */
+}
+
+@keyframes bounceIn {
+    0% { transform: translateX(-50%) scale(0.7); opacity: 0; } /* cite: 1 */
+    50% { transform: translateX(-50%) scale(1.1); opacity: 0.8; } /* cite: 1 */
+    100% { transform: translateX(-50%) scale(1); opacity: 1; } /* cite: 1 */
+}
+
+/* SVG Lines */
+.bracket-lines {
+    position: absolute; /* cite: 1 */
+    top: 0; /* cite: 1 */
+    left: 0; /* cite: 1 */
+    width: 100%; /* cite: 1 */
+    height: 100%; /* cite: 1 */
+    z-index: 1; /* Below matches */ /* cite: 1 */
+}
+
+.bracket-line {
+    fill: none; /* cite: 1 */
+    stroke: var(--line-color); /* cite: 1 */
+    stroke-width: 3; /* cite: 1 */
+    stroke-linecap: round; /* cite: 1 */
+    stroke-linejoin: round; /* cite: 1 */
+    transition: stroke 0.5s ease, stroke-width 0.5s ease, filter 0.5s ease; /* cite: 1 */
+    filter: drop-shadow(0 0 5px rgba(0, 224, 255, 0.2)); /* cite: 1 */
+}
+
+.bracket-line.active {
+    stroke: var(--line-glow); /* cite: 1 */
+    stroke-width: 4; /* cite: 1 */
+    filter: drop-shadow(0 0 8px var(--line-glow)) drop-shadow(0 0 15px var(--line-glow)); /* cite: 1 */
+    animation: linePulse 2s infinite alternate; /* cite: 1 */
+}
+
+@keyframes linePulse {
+    0% { stroke: var(--line-glow); filter: drop-shadow(0 0 8px var(--line-glow)); } /* cite: 1 */
+    100% { stroke: var(--line-glow); filter: drop-shadow(0 0 15px var(--line-glow)); } /* cite: 1 */
+}
+
+/* Sidebar Styling */
+.sidebar {
+    width: 280px; /* cite: 1 */
+    flex-shrink: 0; /* cite: 1 */
+    background: rgba(13, 10, 32, 0.8); /* cite: 1 */
+    border-radius: 15px; /* cite: 1 */
+    padding: 30px; /* cite: 1 */
+    display: flex; /* cite: 1 */
+    flex-direction: column; /* cite: 1 */
+    align-items: center; /* cite: 1 */
+    justify-content: flex-start; /* cite: 1 */
+    gap: 30px; /* cite: 1 */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* cite: 1 */
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4); /* cite: 1 */
+    transform: translateX(20px); /* cite: 1 */
+    opacity: 0; /* cite: 1 */
+    animation: fadeInRight 1s forwards cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s; /* cite: 1 */
+}
+
+@keyframes fadeInRight {
+    to { transform: translateX(0); opacity: 1; } /* cite: 1 */
+}
+
+.logo-section {
+    text-align: center; /* cite: 1 */
+}
+
+.gamba-logo {
+    width: 180px; /* cite: 1 */
+    height: auto; /* cite: 1 */
+    filter: drop-shadow(0 0 15px var(--glow-color)); /* cite: 1 */
+    animation: logoPulse 4s infinite ease-in-out alternate; /* cite: 1 */
+}
+
+@keyframes logoPulse {
+    0% { transform: scale(1); filter: drop-shadow(0 0 15px var(--glow-color)); } /* cite: 1 */
+    50% { transform: scale(1.05); filter: drop-shadow(0 0 25px var(--glow-color)); } /* cite: 1 */
+    100% { transform: scale(1); filter: drop-shadow(0 0 15px var(--glow-color)); } /* cite: 1 */
+}
+
+.code-section {
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); /* cite: 1 */
+    padding: 25px 30px; /* cite: 1 */
+    border-radius: 12px; /* cite: 1 */
+    text-align: center; /* cite: 1 */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5); /* cite: 1 */
+    width: 100%; /* cite: 1 */
+    transform: scale(0.9); /* cite: 1 */
+    opacity: 0; /* cite: 1 */
+    animation: popIn 0.6s forwards cubic-bezier(0.68, -0.55, 0.265, 1.55) 1s; /* cite: 1 */
+}
+
+@keyframes popIn {
+    to { transform: scale(1); opacity: 1; } /* cite: 1 */
+}
+
+.use-code-text {
+    font-size: 1.2em; /* cite: 1 */
+    font-weight: 700; /* cite: 1 */
+    color: #fff; /* cite: 1 */
+    margin-bottom: 5px; /* cite: 1 */
+    letter-spacing: 1px; /* cite: 1 */
+}
+
+.promo-code {
+    font-family: 'Orbitron', sans-serif; /* cite: 1 */
+    font-size: 2.2em; /* cite: 1 */
+    font-weight: 700; /* cite: 1 */
+    color: #fff; /* cite: 1 */
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.7); /* cite: 1 */
+    margin-bottom: 10px; /* cite: 1 */
+}
+
+.boost-text {
+    font-size: 1.8em; /* cite: 1 */
+    font-weight: 700; /* cite: 1 */
+    color: #fff; /* cite: 1 */
+    line-height: 1.2; /* cite: 1 */
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.5); /* cite: 1 */
+}
+
+/* New Sidebar Content */
+.sidebar .logo-section img {
+    /* Replace with your image URL */
+    content:url('https://files.kick.com/images/user/99806/profile_image/conversion/1ab9ad81-7b12-4589-934c-bee6b3f0a9a9-fullsize.webp'); /* cite: 1 */
+    width: 150px; /* Adjust as needed */ /* cite: 1 */
+    height: auto; /* cite: 1 */
+    margin-bottom: 20px; /* cite: 1 */
+}
+
+.sidebar .code-section {
+    background: linear-gradient(45deg, #ff6b6b, #c737ff); /* Example gradient */ /* cite: 1 */
+    padding: 20px; /* cite: 1 */
+    border-radius: 10px; /* cite: 1 */
+    text-align: center; /* cite: 1 */
+    color: white; /* cite: 1 */
+    font-family: 'Orbitron', sans-serif; /* cite: 1 */
+    text-shadow: 0 0 5px rgba(0, 0, 0, 0.5); /* cite: 1 */
+}
+
+.sidebar .code-section p {
+    margin: 0; /* cite: 1 */
+    font-size: 1.2em; /* cite: 1 */
+}
+
+.sidebar .code-section .wager-race {
+    font-size: 2em; /* cite: 1 */
+    font-weight: bold; /* cite: 1 */
+    letter-spacing: 1px; /* cite: 1 */
+}
+
+/* Responsive adjustments */
+@media (max-width: 1400px) {
+    .container {
+        flex-direction: column; /* cite: 1 */
+        padding: 30px; /* cite: 1 */
+        gap: 30px; /* cite: 1 */
+    }
+    .bracket-main-area {
+        height: auto; /* Allow height to adjust */ /* cite: 1 */
+    }
+    .bracket-grid {
+        grid-template-columns: 1fr; /* cite: 1 */
+        gap: 40px 0; /* cite: 1 */
+        height: auto; /* cite: 1 */
+        justify-content: center; /* cite: 1 */
+        align-items: flex-start; /* Align matches to the top */ /* cite: 1 */
+    }
+    /* Reset specific match positioning for mobile */
+    .round-1 .match, .round-2 .match, .round-3 .match, .winner-round .match {
+        align-self: auto; /* cite: 1 */
+        margin-top: 0; /* cite: 1 */
+        margin-bottom: 0; /* cite: 1 */
+    }
+    .match {
+        max-width: 280px; /* cite: 1 */
+        height: auto; /* Auto height for content */ /* cite: 1 */
+        min-height: 100px; /* cite: 1 */
+        flex-direction: column; /* Stack inputs vertically */ /* cite: 1 */
+        justify-content: center; /* cite: 1 */
+    }
+    .player-entry {
+        flex-direction: row; /* Keep player name and multiplier side-by-side */ /* cite: 1 */
+        gap: 5px; /* cite: 1 */
+    }
+    .player-input {
+        flex-grow: 1; /* cite: 1 */
+        flex-basis: auto; /* cite: 1 */
+    }
+    .multiplier-input {
+        flex-shrink: 0; /* Don't shrink multiplier input */ /* cite: 1 */
+    }
+    .decide-winner-btn {
+        position: static; /* cite: 1 */
+        transform: none; /* cite: 1 */
+        margin-top: 10px; /* cite: 1 */
+    }
+    .sidebar {
+        width: 100%; /* cite: 1 */
+        max-width: 400px; /* cite: 1 */
+        margin-top: 40px; /* cite: 1 */
+    }
+    .title {
+        position: static; /* cite: 1 */
+        text-align: center; /* cite: 1 */
+        margin-bottom: 20px; /* cite: 1 */
+        font-size: 3em; /* cite: 1 */
+    }
+    .bracket-lines { /* Hide SVG lines on smaller screens as layout changes */
+        display: none; /* cite: 1 */
+    }
+}
+
+@media (max-width: 768px) {
+    .title { font-size: 2.2em; } /* cite: 1 */
+    .tournament-text { font-size: 0.5em; } /* cite: 1 */
+    .player-input, .multiplier-input { font-size: 0.9em; padding: 7px 5px; } /* cite: 1 */
+    .container { padding: 15px; border-radius: 10px; } /* cite: 1 */
+    .match { padding: 8px; height: auto; min-height: 90px; } /* cite: 1 */
+    .decide-winner-btn { padding: 6px 12px; font-size: 0.8em; } /* cite: 1 */
+    .promo-code { font-size: 1.8em; } /* cite: 1 */
+    .boost-text { font-size: 1.5em; } /* cite: 1 */
+}

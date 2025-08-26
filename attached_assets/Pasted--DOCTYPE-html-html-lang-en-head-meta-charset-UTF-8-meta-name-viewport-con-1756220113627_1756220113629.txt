@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProjectGamba Tournament </title>
+    <link rel="stylesheet" href="/tournament/style.css">
+<style>
+    .bracket-line {
+      stroke: #00f0ff;
+      stroke-width: 4;
+      fill: none;
+      filter: drop-shadow(0 0 6px #00f0ff);
+      transition: all 0.3s ease;
+    }
+</style>
+
+</head>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+  import { getDatabase, ref, get, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAzQsBXjxI3017nUxvwf3aUaUQPbtfrCx8",
+    authDomain: "projectgambabracket.firebaseapp.com",
+    databaseURL: "https://projectgambabracket-default-rtdb.firebaseio.com",
+    projectId: "projectgambabracket",
+    storageBucket: "projectgambabracket.firebasestorage.app",
+    messagingSenderId: "721165844638",
+    appId: "1:721165844638:web:b555a6146bb5181056fb8f"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  let isBoss = false;
+
+  // Floating input panel
+  const unlockPanel = document.createElement("div");
+  unlockPanel.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(0,0,0,0.7);
+    padding: 10px 15px;
+    border-radius: 8px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  `;
+  unlockPanel.innerHTML = `
+    <input type="password" id="bossKeyInput" placeholder="Enter Key" style="
+      padding: 6px 10px;
+      font-size: 0.9em;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      outline: none;
+    ">
+    <button id="bossKeyGo" style="
+      padding: 6px 12px;
+      background: #00e0ff;
+      color: black;
+      font-weight: bold;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    ">Go</button>
+  `;
+  document.body.appendChild(unlockPanel);
+
+  document.getElementById("bossKeyGo").onclick = async () => {
+    const enteredKey = document.getElementById("bossKeyInput").value.trim();
+    try {
+      const snapshot = await get(ref(db, "adminKey"));
+      const trueKey = snapshot.exists() ? snapshot.val() : null;
+
+      if (enteredKey === trueKey) {
+        isBoss = true;
+        document.getElementById("bossKeyInput").disabled = true;
+        document.getElementById("bossKeyGo").textContent = "✓";
+        enableBossMode();
+      } else {
+        alert("Wrong key!");
+      }
+    } catch (err) {
+      console.error("Firebase get() error:", err);
+      alert("Failed to connect to database.");
+    }
+  };
+
+  // Everyone sees data
+  onValue(ref(db, 'matches'), (snapshot) => {
+    const data = snapshot.val();
+    if (!data) return;
+    for (const matchId in data) {
+      const matchData = data[matchId];
+      for (const playerKey in matchData) {
+        const playerId = playerKey.replace("player", "");
+        const nameInput = document.querySelector(`#${matchId} .player-input[data-player-id="${playerId}"]`);
+        const multInput = document.querySelector(`#${matchId} .multiplier-input[data-player-id="${playerId}"]`);
+        if (matchData[playerKey].name !== undefined && nameInput) nameInput.value = matchData[playerKey].name;
+        if (matchData[playerKey].multiplier !== undefined && multInput) multInput.value = matchData[playerKey].multiplier;
+      }
+    }
+  });
+
+  // Initially disable all inputs
+  window.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll('.player-input, .multiplier-input').forEach(input => {
+      input.disabled = true;
+    });
+  });
+
+  function enableBossMode() {
+    document.querySelectorAll('.player-input, .multiplier-input').forEach(input => {
+      input.disabled = false;
+    });
+
+    document.addEventListener('input', (e) => {
+      const input = e.target;
+      if (!input.classList.contains('player-input') && !input.classList.contains('multiplier-input')) return;
+      const match = input.closest('.match');
+      const matchId = match.id;
+      const playerId = input.dataset.playerId;
+      const field = input.classList.contains('player-input') ? 'name' : 'multiplier';
+      set(ref(db, `matches/${matchId}/player${playerId}/${field}`), input.value);
+    });
+
+    const resetBtn = document.createElement("button");
+    resetBtn.textContent = "Reset All";
+    resetBtn.style.cssText = `
+      position: fixed; bottom: 20px; right: 20px; background: red;
+      color: white; font-weight: bold; padding: 10px 20px;
+      border: none; border-radius: 8px; cursor: pointer; z-index: 9999;
+    `;
+    resetBtn.onclick = () => {
+      if (confirm("Reset all bracket data?")) {
+        remove(ref(db, "matches")).then(() => location.reload());
+      }
+    };
+    document.body.appendChild(resetBtn);
+  }
+</script>
+
+
+<body>
+    <div class="background-animation"></div>
+
+    <div class="container">
+        <h1 class="title">ProjectGamba <span class="tournament-text">TOURNAMENT</span></h1>
+
+        <div class="bracket-main-area">
+          <svg class="bracket-lines" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"></svg>
+
+
+            <div class="bracket-grid">
+                <div class="round round-1">
+                    <div class="match" id="match-R1A" data-round="R1" data-next-match="R2A" data-next-slot="1">
+                        <div class="player-entry">
+                            <input type="text" class="player-input" data-player-id="1" placeholder="Player 1">
+                            <input type="number" class="multiplier-input" data-player-id="1" placeholder="x">
+                        </div>
+                        <span class="vs-text">vs</span>
+                        <div class="player-entry">
+                            <input type="text" class="player-input" data-player-id="2" placeholder="Player 2">
+                            <input type="number" class="multiplier-input" data-player-id="2" placeholder="x">
+                        </div>
+                        <button class="decide-winner-btn" data-match-id="R1A">Decide Winner</button>
+                    </div>
+                    <div class="match" id="match-R1B" data-round="R1" data-next-match="R2A" data-next-slot="2">
+                        <div class="player-entry">
+                            <input type="text" class="player-input" data-player-id="1" placeholder="Player 3">
+                            <input type="number" class="multiplier-input" data-player-id="1" placeholder="x">
+                        </div>
+                        <span class="vs-text">vs</span>
+                        <div class="player-entry">
+                            <input type="text" class="player-input" data-player-id="2" placeholder="Player 4">
+                            <input type="number" class="multiplier-input" data-player-id="2" placeholder="x">
+                        </div>
+                        <button class="decide-winner-btn" data-match-id="R1B">Decide Winner</button>
+                    </div>
+                    <div class="match" id="match-R1C" data-round="R1" data-next-match="R2B" data-next-slot="1">
+                        <div class="player-entry">
+                            <input type="text" class="player-input" data-player-id="1" placeholder="Player 5">
+                            <input type="number" class="multiplier-input" data-player-id="1" placeholder="x">
+                        </div>
+                        <span class="vs-text">vs</span>
+                        <div class="player-entry">
+                            <input type="text" class="player-input" data-player-id="2" placeholder="Player 6">
+                            <input type="number" class="multiplier-input" data-player-id="2" placeholder="x">
+                        </div>
+                        <button class="decide-winner-btn" data-match-id="R1C">Decide Winner</button>
+                    </div>
+                    <div class="match" id="match-R1D" data-round="R1" data-next-match="R2B" data-next-slot="2">
+                        <div class="player-entry">
+                            <input type="text" class="player-input" data-player-id="1" placeholder="Player 7">
+                            <input type="number" class="multiplier-input" data-player-id="1" placeholder="x">
+                        </div>
+                        <span class="vs-text">vs</span>
+                        <div class="player-entry">
+                            <input type="text" class="player-input" data-player-id="2" placeholder="Player 8">
+                            <input type="number" class="multiplier-input" data-player-id="2" placeholder="x">
+                        </div>
+                        <button class="decide-winner-btn" data-match-id="R1D">Decide Winner</button>
+                    </div>
+                </div>
+
+                <div class="round round-2">
+                    <div class="match" id="match-R2A" data-round="R2" data-next-match="R3A" data-next-slot="1">
+                        <div class="player-entry">
+                            <input type="text" class="player-input winner-input" data-player-id="1" placeholder="Winner R1A/B"  >
+                            <input type="number" class="multiplier-input winner-multiplier" data-player-id="1"  >
+                        </div>
+                        <span class="vs-text">vs</span>
+                        <div class="player-entry">
+                            <input type="text" class="player-input winner-input" data-player-id="2" placeholder="Winner R1A/B"  >
+                            <input type="number" class="multiplier-input winner-multiplier" data-player-id="2"  >
+                        </div>
+                        <button class="decide-winner-btn" data-match-id="R2A">Decide Winner</button>
+                    </div>
+                    <div class="match" id="match-R2B" data-round="R2" data-next-match="R3A" data-next-slot="2">
+                        <div class="player-entry">
+                            <input type="text" class="player-input winner-input" data-player-id="1" placeholder="Winner R1C/D"  >
+                            <input type="number" class="multiplier-input winner-multiplier" data-player-id="1"  >
+                        </div>
+                        <span class="vs-text">vs</span>
+                        <div class="player-entry">
+                            <input type="text" class="player-input winner-input" data-player-id="2" placeholder="Winner R1C/D"  >
+                            <input type="number" class="multiplier-input winner-multiplier" data-player-id="2"  >
+                        </div>
+                        <button class="decide-winner-btn" data-match-id="R2B">Decide Winner</button>
+                    </div>
+                </div>
+
+                <div class="round round-3">
+                    <div class="match" id="match-R3A" data-round="R3" data-next-match="Winner" data-next-slot="1">
+                        <div class="player-entry">
+                            <input type="text" class="player-input winner-input" data-player-id="1" placeholder="Winner R2A/B"  >
+                            <input type="number" class="multiplier-input winner-multiplier" data-player-id="1"  >
+                        </div>
+                        <span class="vs-text">vs</span>
+                        <div class="player-entry">
+                            <input type="text" class="player-input winner-input" data-player-id="2" placeholder="Winner R2A/B"  >
+                            <input type="number" class="multiplier-input winner-multiplier" data-player-id="2"  >
+                        </div>
+                        <button class="decide-winner-btn" data-match-id="R3A">Decide Winner</button>
+                    </div>
+                </div>
+
+                <div class="round winner-round">
+                    <div class="match winner-display" id="match-Winner" data-round="Winner">
+                        <div class="player-entry final-winner-entry">
+                            <input type="text" class="player-input final-winner-input" placeholder="Tournament Champion"  >
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="logo-section">
+                <img src="https://files.kick.com/images/user/99806/profile_image/conversion/1ab9ad81-7b12-4589-934c-bee6b3f0a9a9-fullsize.webp" alt="Project Gamba Logo" class="gamba-logo">
+            </div>
+            <div class="code-section">
+                <p class="use-code-text">CODE</p>
+                <p class="promo-code">PROJECT</p>
+                <p class="promo-code">GAMBA</p>
+                <p class="wager-race">$200<br>WAGER RACE</p>
+            </div>
+        </div>
+    </div>
+
+
+ <script src="/tournament/script.js"></script>
+<script>
+  function setupDecideWinnerButtons() {
+    const buttons = document.querySelectorAll('.decide-winner-btn');
+    buttons.forEach(button => {
+      button.addEventListener('click', () => {
+        button.style.display = 'none'; // hide the button after click
+      });
+    });
+  }
+
+  function drawConnectorLine(fromId, toId, svg) {
+    const fromEl = document.getElementById(fromId);
+    const toEl = document.getElementById(toId);
+    if (!fromEl || !toEl) return;
+
+    const fromBox = fromEl.getBoundingClientRect();
+    const toBox = toEl.getBoundingClientRect();
+    const svgBox = svg.getBoundingClientRect();
+
+    const x1 = fromBox.right - svgBox.left;
+    const y1 = fromBox.top + fromBox.height / 2 - svgBox.top;
+    const x2 = toBox.left - svgBox.left;
+    const y2 = toBox.top + toBox.height / 2 - svgBox.top;
+
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("class", "bracket-line");
+    path.setAttribute("d", `M${x1},${y1} C${x1 + 40},${y1} ${x2 - 40},${y2} ${x2},${y2}`);
+    svg.appendChild(path);
+  }
+
+  function drawAllLines() {
+    const svg = document.querySelector('.bracket-lines');
+    svg.innerHTML = '';
+    drawConnectorLine('match-R1A', 'match-R2A', svg);
+    drawConnectorLine('match-R1B', 'match-R2A', svg);
+    drawConnectorLine('match-R1C', 'match-R2B', svg);
+    drawConnectorLine('match-R1D', 'match-R2B', svg);
+    drawConnectorLine('match-R2A', 'match-R3A', svg);
+    drawConnectorLine('match-R2B', 'match-R3A', svg);
+    drawConnectorLine('match-R3A', 'match-Winner', svg);
+  }
+
+  window.addEventListener('resize', drawAllLines);
+  window.addEventListener('DOMContentLoaded', () => {
+    drawAllLines();
+    setupDecideWinnerButtons(); // 👈 THIS enables button hiding
+  });
+</script>
+
+</body>
+</html>

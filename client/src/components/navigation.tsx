@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Dice6, Trophy, Eye, Key, LogOut, Users, Shuffle } from "lucide-react";
+import { Dice6, Trophy, Eye, Key, LogOut, Users, Shuffle, Crown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { LoginModal } from "@/components/login-modal";
@@ -17,6 +17,7 @@ export function Navigation() {
     { path: "/", label: "My Hunts", icon: Trophy },
     { path: "/live", label: "Live Hunts", icon: Users },
     { path: "/slot-picker", label: "Slot Picker", icon: Shuffle },
+    { path: "/tournament", label: "Tournament", icon: Crown },
     ...(isAuthenticated ? [
       { path: "/latest-hunt-overlay", label: "OBS Overlay", icon: Eye },
       // Only show Admin Keys for GambiZard admin

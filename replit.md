@@ -10,6 +10,8 @@ A comprehensive bonus hunting platform for slot machine enthusiasts and streamer
 - **Multi-currency Support**: USD, CAD, AUD with proper formatting
 - **OBS Overlay Integration**: Protected admin-only overlays for streaming
 - **Comprehensive Slot Database**: 3,376+ slots with images and provider information
+- **Tournament System**: Bracket-style tournaments with 4, 8, 16, 32 player support and admin controls
+- **Slot Picker**: Interactive slot selection with 3D animations and provider filtering
 - **Public Hunt Sharing**: Shareable links for hunt viewing
 - **Dark Theme UI**: Modern card-based design with responsive layout
 
@@ -63,6 +65,8 @@ A comprehensive bonus hunting platform for slot machine enthusiasts and streamer
 - **Edit Functionality**: Edit bet amounts and hunt details without restrictions
 
 ## Recent Changes
+- **Tournament System Added**: Created comprehensive tournament bracket system with 4, 8, 16, and 32 player support, admin password protection, automatic winner advancement, and beautiful card-based UI with gradient styling (Aug 2025)
+- **Slot Picker Component**: Added interactive slot picker with 3D card-flip animations, provider filtering, spacebar controls, and seamless integration with existing slot database (Aug 2025)
 - **Live Hunts UI Enhancement**: Removed OBS link and preview buttons from live hunts page as requested, improved status display system with proper color coding for COLLECTING/PLAYING/COMPLETED states (Aug 2025)
 - **New Latest Hunt OBS Overlay**: Created /latest-hunt-overlay route with comprehensive display matching reference image - shows hunt stats (Total Win, Best Win, Best Multi, Bonuses Played), next bonus highlight, and complete slots table with NEXT/WAITING status indicators (Aug 2025)
 - **Authentication System Fully Fixed**: Resolved all remaining apiRequest import issues and authentication problems in hunt-detail.tsx, both payout recording and bet editing now use proper authenticated API calls with comprehensive cache invalidation (Aug 2025)
