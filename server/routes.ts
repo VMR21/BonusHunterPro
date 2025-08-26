@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertHuntSchema, insertBonusSchema, payoutSchema, adminLoginSchema } from "@shared/schema";
 import { requireAdmin, createAdminSession, checkAdminSession, type AuthenticatedRequest } from "./auth";
+import { updateHuntStatus } from "./hunt-status";
 import { randomUUID } from 'crypto';
 import fs from 'fs';
 import { parse } from 'csv-parse/sync';
@@ -264,7 +265,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const hunt = await storage.updateHunt(req.params.id, { 
         isPlaying: true,
-        currentSlotIndex: 0 
+        currentSlotIndex: 0,
+        status: 'playing'
       });
       if (!hunt) {
         return res.status(404).json({ message: "Hunt not found" });
@@ -281,7 +283,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const hunt = await storage.updateHunt(req.params.id, { 
         isPlaying: true,
-        currentSlotIndex: 0 
+        currentSlotIndex: 0,
+        status: 'playing'
       });
       if (!hunt) {
         return res.status(404).json({ message: "Hunt not found" });
@@ -313,16 +316,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isPlayed: true
       });
 
-      // Update hunt totals
-      const hunt = await storage.getHunt(bonus.huntId);
-      if (hunt) {
-        const allBonuses = await storage.getBonusesByHuntId(bonus.huntId);
-        const totalWon = allBonuses.reduce((sum, b) => sum + (Number(b.winAmount) || 0), 0);
-        
-        await storage.updateHunt(bonus.huntId, {
-          totalWon: totalWon.toString()
-        });
-      }
+      // Update hunt totals and status
+      await updateHuntStatus(bonus.huntId);
 
       res.json(updatedBonus);
     } catch (error) {
@@ -351,16 +346,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isPlayed: true
       });
 
-      // Update hunt totals
-      const hunt = await storage.getHunt(bonus.huntId);
-      if (hunt) {
-        const allBonuses = await storage.getBonusesByHuntId(bonus.huntId);
-        const totalWon = allBonuses.reduce((sum, b) => sum + (Number(b.winAmount) || 0), 0);
-        
-        await storage.updateHunt(bonus.huntId, {
-          totalWon: totalWon.toString()
-        });
-      }
+      // Update hunt totals and status
+      await updateHuntStatus(bonus.huntId);
 
       res.json(updatedBonus);
     } catch (error) {

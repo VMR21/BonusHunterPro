@@ -67,6 +67,7 @@ A comprehensive bonus hunting platform for slot machine enthusiasts and streamer
 - **Public API Access**: Made all functionality accessible without admin requirements (Aug 2025)
 - **UI Enhancement**: Removed total cost display from hunt page and OBS view as requested (Aug 2025)
 - **Live OBS Overlay**: Added new scrolling bonuses overlay with images and next bonus highlighting (Aug 2025)
+- **Hunt Status Management**: Implemented automatic status changes - "collecting" → "playing" → "completed" (Aug 2025)
 - **Payout Recording**: Enhanced with total payout display and real-time updates (Aug 2025)
 - **Bug Fixes**: Fixed slot image display by correcting CSV field mapping from "image" to "imageUrl" (Aug 2025)
 - **Button Functionality**: All buttons now have proper URL/API functionality without admin restrictions (Aug 2025)
