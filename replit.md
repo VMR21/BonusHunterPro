@@ -65,9 +65,11 @@ A comprehensive bonus hunting platform for slot machine enthusiasts and streamer
 - **Database Migration**: Migrated from SQLite to PostgreSQL for enhanced performance (Jan 2025)
 - **Admin Authentication Removal**: Removed admin authentication system in favor of existing login system (Aug 2025)
 - **Public API Access**: Made all functionality accessible without admin requirements (Aug 2025)
+- **UI Enhancement**: Removed total cost display from hunt page and OBS view as requested (Aug 2025)
+- **Live OBS Overlay**: Added new scrolling bonuses overlay with images and next bonus highlighting (Aug 2025)
+- **Payout Recording**: Enhanced with total payout display and real-time updates (Aug 2025)
 - **Bug Fixes**: Fixed slot image display by correcting CSV field mapping from "image" to "imageUrl" (Aug 2025)
 - **Button Functionality**: All buttons now have proper URL/API functionality without admin restrictions (Aug 2025)
-- **UI Improvements**: Fixed image loading errors and null safety in latest-hunt page (Aug 2025)
 - **Gameplay Functionality**: Added "Start Playing" with payout recording and multiplier calculation
 - **Slot Database**: Imported 3,376 slots with complete metadata and real image URLs
 - **Backwards Compatibility**: Admin routes still available for legacy support

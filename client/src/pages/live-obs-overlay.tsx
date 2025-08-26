@@ -1,214 +1,174 @@
 import { useState, useEffect } from "react";
-import { useParams } from "wouter";
+import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
-import type { Hunt, Bonus } from "@shared/schema";
 import type { Currency } from "@/lib/currency";
 
-export default function LiveOBSOverlayPage() {
-  const { id } = useParams<{ id: string }>();
-  const [hunt, setHunt] = useState<Hunt | null>(null);
-  const [bonuses, setBonuses] = useState<Bonus[]>([]);
+export default function LiveOBSOverlay() {
+  const [data, setData] = useState<any>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        if (id === 'latest') {
-          // Fetch latest hunt
-          const response = await fetch('/api/latest-hunt');
-          if (response.ok) {
-            const data = await response.json();
-            setHunt(data.hunt);
-            setBonuses(data.bonuses);
-          }
-        } else {
-          // Fetch specific hunt
-          const [huntResponse, bonusesResponse] = await Promise.all([
-            fetch(`/api/hunts/${id}`),
-            fetch(`/api/hunts/${id}/bonuses`)
-          ]);
-          
-          if (huntResponse.ok && bonusesResponse.ok) {
-            const huntData = await huntResponse.json();
-            const bonusesData = await bonusesResponse.json();
-            setHunt(huntData);
-            setBonuses(bonusesData);
-          }
-        }
+        const response = await fetch('/obs-overlay/latest');
+        const result = await response.json();
+        setData(result);
       } catch (error) {
-        console.error('Failed to fetch hunt data:', error);
+        console.error('Error fetching OBS data:', error);
       }
     };
 
     fetchData();
-
-    // Auto-refresh every 3 seconds for live updates
-    const interval = setInterval(fetchData, 3000);
+    const interval = setInterval(fetchData, 2000);
     return () => clearInterval(interval);
-  }, [id]);
+  }, []);
 
-  if (!hunt) {
+  if (!data?.hunt) {
     return (
       <div className="min-h-screen bg-transparent flex items-center justify-center">
-        <div className="text-white text-center">
-          <div className="animate-pulse">Loading hunt data...</div>
-        </div>
+        <div className="text-white text-2xl">No active hunt</div>
       </div>
     );
   }
 
-  const openedBonuses = bonuses.filter(b => b.status === 'opened');
-  const totalBonuses = bonuses.length;
+  const { hunt, bonuses } = data;
+  const openedBonuses = bonuses?.filter(b => b.isPlayed) || [];
+  const totalBonuses = bonuses?.length || 0;
   const progress = totalBonuses > 0 ? (openedBonuses.length / totalBonuses) * 100 : 0;
   
-  const totalCost = bonuses.reduce((sum, b) => sum + b.betAmount, 0);
-  const totalWin = openedBonuses.reduce((sum, b) => sum + (b.winAmount || 0), 0);
-  const roi = totalCost > 0 ? ((totalWin - totalCost) / totalCost) * 100 : 0;
+  const totalWin = openedBonuses.reduce((sum, b) => sum + (Number(b.winAmount) || 0), 0);
+  const nextBonus = hunt.isPlaying ? bonuses?.find(b => !b.isPlayed) : null;
 
   return (
-    <div className="min-h-screen bg-transparent text-white p-6">
-      {/* Overlay Stats Panel */}
-      <div className="fixed top-6 right-6 bg-black/80 backdrop-blur-sm rounded-lg p-6 border border-purple-500/30 min-w-[350px]">
-        <div className="mb-4">
-          <h2 className="text-xl font-bold text-white mb-1">{hunt.title}</h2>
-          <div className="flex items-center space-x-2 text-sm">
-            <span className="px-2 py-1 bg-purple-600 rounded text-white text-xs uppercase font-medium">
+    <div className="min-h-screen bg-transparent text-white p-8 overflow-hidden">
+      <div className="max-w-6xl mx-auto">
+        {/* Hunt Header */}
+        <div className="bg-black/80 backdrop-blur-sm rounded-lg p-6 mb-6 border border-purple-500/30">
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-3xl font-bold text-purple-300">{hunt.title}</h1>
+            <Badge className="bg-purple-600 text-white px-3 py-1">
               {hunt.status}
-            </span>
-            <span className="text-green-400">● Live</span>
+            </Badge>
           </div>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="mb-4">
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-300">Progress</span>
-            <span className="text-white">{openedBonuses.length}/{totalBonuses}</span>
-          </div>
-          <div className="w-full bg-gray-700 rounded-full h-2">
-            <div 
-              className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="text-center p-3 bg-gray-800/50 rounded">
-            <div className="text-lg font-bold text-white">
-              {formatCurrency(totalCost, hunt.currency as Currency)}
+          <div className="grid grid-cols-3 gap-6 text-center">
+            <div>
+              <div className="text-2xl font-bold text-green-400">
+                {formatCurrency(Number(hunt.startBalance || 0), hunt.currency as Currency)}
+              </div>
+              <div className="text-sm text-gray-400">Start Balance</div>
             </div>
-            <div className="text-xs text-gray-400 uppercase">Total Cost</div>
-          </div>
-          <div className="text-center p-3 bg-gray-800/50 rounded">
-            <div className="text-lg font-bold text-green-400">
-              {formatCurrency(totalWin, hunt.currency as Currency)}
+            <div>
+              <div className="text-2xl font-bold text-green-400">
+                {formatCurrency(totalWin, hunt.currency as Currency)}
+              </div>
+              <div className="text-sm text-gray-400">Total Payout</div>
             </div>
-            <div className="text-xs text-gray-400 uppercase">Total Win</div>
+            <div>
+              <div className="text-2xl font-bold text-yellow-400">
+                {openedBonuses.length}/{totalBonuses}
+              </div>
+              <div className="text-sm text-gray-400">Bonuses Played</div>
+            </div>
+          </div>
+          
+          {/* Progress Bar */}
+          <div className="mt-4">
+            <div className="w-full bg-gray-700 rounded-full h-3">
+              <div 
+                className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
           </div>
         </div>
 
-        {/* ROI */}
-        <div className="text-center p-3 bg-gray-800/50 rounded mb-4">
-          <div className={`text-xl font-bold ${roi >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-            {roi >= 0 ? '+' : ''}{roi.toFixed(1)}%
+        {/* Next Bonus Highlight */}
+        {nextBonus && (
+          <div className="bg-yellow-500/20 backdrop-blur-sm rounded-lg p-4 mb-6 border border-yellow-500/50 animate-pulse">
+            <div className="flex items-center gap-4">
+              <div className="text-yellow-400 font-bold text-lg">NEXT:</div>
+              <div className="w-12 h-16 bg-gray-700 rounded overflow-hidden flex-shrink-0">
+                {nextBonus.imageUrl ? (
+                  <img
+                    src={nextBonus.imageUrl}
+                    alt={nextBonus.slotName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">
+                    No image
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="text-white font-semibold">{nextBonus.slotName}</div>
+                <div className="text-gray-400">{nextBonus.provider}</div>
+                <div className="text-green-400">{formatCurrency(Number(nextBonus.betAmount), hunt.currency as Currency)}</div>
+              </div>
+            </div>
           </div>
-          <div className="text-xs text-gray-400 uppercase">ROI</div>
-        </div>
+        )}
 
-        {/* Current Slot (if opening) */}
-        {hunt.status === 'opening' && bonuses.length > 0 && (
-          <div className="border-t border-gray-600 pt-4">
-            <div className="text-sm text-gray-400 mb-2">Now Opening:</div>
-            {(() => {
-              const currentBonus = bonuses.find(b => b.status === 'waiting') || bonuses[bonuses.length - 1];
-              return currentBonus ? (
-                <div className="flex items-center space-x-3 p-3 bg-purple-600/20 rounded-lg border border-purple-500/30">
-                  <div className="w-10 h-12 bg-gray-700 rounded overflow-hidden flex-shrink-0">
-                    {currentBonus.imageUrl ? (
-                      <img
-                        src={currentBonus.imageUrl}
-                        alt={currentBonus.slotName}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">
-                        No image
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-white font-medium text-sm truncate">
-                      {currentBonus.slotName}
+        {/* Scrolling Bonuses */}
+        {bonuses && bonuses.length > 0 && (
+          <div className="bg-black/80 backdrop-blur-sm rounded-lg p-6 border border-purple-500/30">
+            <h2 className="text-xl font-bold text-purple-300 mb-4">All Bonuses</h2>
+            <div className="relative overflow-hidden h-96">
+              <div className="animate-scroll space-y-3">
+                {bonuses.concat(bonuses).map((bonus, index) => (
+                  <div 
+                    key={`${bonus.id}-${index}`}
+                    className={`flex items-center gap-4 p-3 rounded-lg transition-all ${
+                      bonus.isPlayed 
+                        ? 'bg-green-900/20 border border-green-500/30' 
+                        : bonus === nextBonus 
+                          ? 'bg-yellow-900/20 border border-yellow-500/50' 
+                          : 'bg-gray-900/20 border border-gray-700/30'
+                    }`}
+                  >
+                    <div className="text-gray-400 font-mono w-8">{bonus.order}</div>
+                    <div className="w-10 h-12 bg-gray-700 rounded overflow-hidden flex-shrink-0">
+                      {bonus.imageUrl ? (
+                        <img
+                          src={bonus.imageUrl}
+                          alt={bonus.slotName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">
+                          No image
+                        </div>
+                      )}
                     </div>
-                    <div className="text-gray-400 text-xs">
-                      {currentBonus.provider} • {formatCurrency(currentBonus.betAmount, hunt.currency as Currency)}
+                    <div className="flex-1">
+                      <div className="text-white font-medium">{bonus.slotName}</div>
+                      <div className="text-gray-400 text-sm">{bonus.provider}</div>
+                    </div>
+                    <div className="text-green-400 font-mono">
+                      {formatCurrency(Number(bonus.betAmount), hunt.currency as Currency)}
+                    </div>
+                    <div className="w-20 text-right">
+                      {bonus.isPlayed ? (
+                        <div>
+                          <div className="text-green-400 font-bold">
+                            {formatCurrency(Number(bonus.winAmount || 0), hunt.currency as Currency)}
+                          </div>
+                          <div className="text-yellow-400 text-sm">
+                            {Number(bonus.multiplier || 0).toFixed(2)}x
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-gray-500">-</div>
+                      )}
                     </div>
                   </div>
-                </div>
-              ) : null;
-            })()}
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Compact bonus list overlay (bottom-left) */}
-      {bonuses.length > 0 && (
-        <div className="fixed bottom-6 left-6 bg-black/80 backdrop-blur-sm rounded-lg p-4 border border-purple-500/30 max-w-md max-h-96 overflow-y-auto">
-          <h3 className="text-lg font-bold text-white mb-3">Bonus Queue ({bonuses.length})</h3>
-          <div className="space-y-2">
-            {bonuses.slice(0, 12).map((bonus) => (
-              <div 
-                key={bonus.id} 
-                className={`flex items-center space-x-3 p-2 rounded ${
-                  bonus.status === 'opened' 
-                    ? 'bg-green-600/20 border border-green-500/30' 
-                    : bonus.status === 'waiting'
-                    ? 'bg-purple-600/20 border border-purple-500/30'
-                    : 'bg-gray-800/50'
-                }`}
-              >
-                <div className="w-6 h-8 bg-gray-700 rounded overflow-hidden flex-shrink-0">
-                  {bonus.imageUrl ? (
-                    <img
-                      src={bonus.imageUrl}
-                      alt={bonus.slotName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-600"></div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-white text-xs font-medium truncate">
-                    #{bonus.order} {bonus.slotName}
-                  </div>
-                  <div className="text-gray-400 text-xs">
-                    {formatCurrency(bonus.betAmount, hunt.currency as Currency)}
-                    {bonus.winAmount && (
-                      <span className="text-green-400 ml-2">
-                        → {formatCurrency(bonus.winAmount, hunt.currency as Currency)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex-shrink-0">
-                  {bonus.status === 'opened' ? (
-                    <span className="text-green-400 text-xs">✓</span>
-                  ) : bonus.status === 'waiting' ? (
-                    <span className="text-yellow-400 text-xs">⏳</span>
-                  ) : null}
-                </div>
-              </div>
-            ))}
-            {bonuses.length > 12 && (
-              <div className="text-center text-gray-400 text-xs py-2">
-                ... and {bonuses.length - 12} more
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

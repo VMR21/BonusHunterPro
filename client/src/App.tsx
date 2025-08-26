@@ -8,7 +8,7 @@ import HuntsPage from "@/pages/hunts";
 import HuntDetailPage from "@/pages/hunt-detail";
 import AdminPage from "@/pages/admin";
 import OBSOverlayPage from "@/pages/obs-overlay";
-import LiveOBSOverlayPage from "@/pages/live-obs-overlay";
+import LiveOBSOverlay from "@/pages/live-obs-overlay";
 import LatestHuntPage from "@/pages/latest-hunt";
 import PublicHuntPage from "@/pages/public-hunt";
 import NotFound from "@/pages/not-found";
@@ -21,7 +21,8 @@ function Router() {
       <Route path="/admin" component={AdminPage} />
       <Route path="/obs" component={OBSOverlayPage} />
       <Route path="/obs-v2" component={OBSOverlayPage} />
-      <Route path="/obs-overlay/:id" component={LiveOBSOverlayPage} />
+      <Route path="/obs-overlay/:id" component={LiveOBSOverlay} />
+      <Route path="/live-obs-overlay" component={LiveOBSOverlay} />
       <Route path="/latest-hunt" component={LatestHuntPage} />
       <Route path="/public/:token" component={PublicHuntPage} />
       <Route component={NotFound} />

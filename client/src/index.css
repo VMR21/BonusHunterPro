@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* OBS Overlay animations */
+@keyframes scroll {
+  0% { 
+    transform: translateY(0); 
+  }
+  100% { 
+    transform: translateY(-50%); 
+  }
+}
+
+.animate-scroll {
+  animation: scroll 30s linear infinite;
+}
+
 :root {
   --background: hsl(0 0% 100%);
   --foreground: hsl(210 25% 7.8431%);

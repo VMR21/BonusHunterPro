@@ -241,12 +241,7 @@ export default function HuntDetailPage() {
                   {formatCurrency(avgBet, hunt.currency as Currency)}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Total Cost:</span>
-                <span className="text-white">
-                  {formatCurrency(totalCost, hunt.currency as Currency)}
-                </span>
-              </div>
+
               <div className="flex justify-between">
                 <span className="text-gray-400">Total Win:</span>
                 <span className="text-green-400">
