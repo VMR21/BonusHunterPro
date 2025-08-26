@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, User, Clock, DollarSign } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Trophy, User, Clock, DollarSign, Copy, ExternalLink } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { useToast } from "@/hooks/use-toast";
 
 interface LiveHunt {
   id: string;
@@ -23,6 +25,24 @@ export default function LiveHuntsPage() {
     queryKey: ["/api/live-hunts"],
     refetchInterval: 3000, // Refresh every 3 seconds for live updates
   });
+  
+  const { toast } = useToast();
+
+  const copyOBSLink = () => {
+    const obsUrl = `${window.location.origin}/live-bonus-hunt`;
+    navigator.clipboard.writeText(obsUrl).then(() => {
+      toast({
+        title: "OBS Link Copied!",
+        description: "The live bonus hunt URL has been copied to your clipboard",
+      });
+    }).catch(() => {
+      toast({
+        title: "Copy Failed",
+        description: "Please copy the URL manually: " + obsUrl,
+        variant: "destructive",
+      });
+    });
+  };
 
   if (isLoading) {
     return (
@@ -42,10 +62,33 @@ export default function LiveHuntsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-white mb-2">Live Hunts</h2>
-        <p className="text-gray-300 text-lg">
-          See what everyone is hunting right now
-        </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-3xl font-bold text-white mb-2">Live Hunts</h2>
+            <p className="text-gray-300 text-lg">
+              See what everyone is hunting right now
+            </p>
+          </div>
+          <div className="flex space-x-3">
+            <Button 
+              onClick={copyOBSLink}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+              data-testid="button-copy-obs-link"
+            >
+              <Copy className="w-4 h-4 mr-2" />
+              Copy OBS Link
+            </Button>
+            <Button 
+              onClick={() => window.open('/live-bonus-hunt', '_blank')}
+              variant="outline"
+              className="border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white"
+              data-testid="button-preview-obs"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Preview
+            </Button>
+          </div>
+        </div>
       </div>
 
       {liveHunts.length === 0 ? (

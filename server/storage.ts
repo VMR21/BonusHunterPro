@@ -204,7 +204,7 @@ export class DatabaseStorage implements IStorage {
   async getAllHuntsWithAdminNames(): Promise<(Hunt & { adminDisplayName: string })[]> {
     const result = await db
       .select({
-        ...hunts,
+        hunt: hunts,
         adminDisplayName: adminKeys.displayName,
       })
       .from(hunts)
@@ -212,7 +212,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(hunts.createdAt));
     
     return result.map(row => ({
-      ...row.hunts,
+      ...row.hunt,
       adminDisplayName: row.adminDisplayName || 'Unknown Admin',
     }));
   }

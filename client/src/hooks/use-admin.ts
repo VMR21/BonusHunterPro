@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 // Admin authentication hook
 export function useAdmin() {
   const [sessionToken, setSessionToken] = useState<string | null>(
-    localStorage.getItem('admin_session_token')
+    localStorage.getItem('adminSessionToken')
   );
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -55,7 +55,7 @@ export function useAdmin() {
     onSuccess: (data) => {
       const token = data.sessionToken;
       setSessionToken(token);
-      localStorage.setItem('admin_session_token', token);
+      localStorage.setItem('adminSessionToken', token);
       queryClient.invalidateQueries({ queryKey: ['/api/admin/check'] });
       toast({
         title: "Login Successful",
@@ -75,7 +75,7 @@ export function useAdmin() {
   // Logout function
   const logout = () => {
     setSessionToken(null);
-    localStorage.removeItem('admin_session_token');
+    localStorage.removeItem('adminSessionToken');
     queryClient.clear();
     toast({
       title: "Logged Out",
