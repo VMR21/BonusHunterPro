@@ -37,13 +37,16 @@ export function useAdmin() {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (adminKey: string) => {
-      const response = await apiRequest("/api/admin/login", {
+      const response = await fetch("/api/admin/login", {
         method: "POST",
         body: JSON.stringify({ adminKey }),
         headers: {
           'Content-Type': 'application/json',
         },
       });
+      if (!response.ok) {
+        throw new Error('Login failed');
+      }
       return response.json();
     },
     onSuccess: (data) => {
