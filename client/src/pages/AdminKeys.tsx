@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Trash2, Plus, Edit, Save, X, Key, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -142,9 +142,10 @@ export default function AdminKeys() {
     });
   };
 
-  const formatDate = (dateString: string | null) => {
+  const formatDate = (dateString: string | null | Date) => {
     if (!dateString) return "Never";
-    return new Date(dateString).toLocaleDateString();
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return date.toLocaleDateString();
   };
 
   if (!isGambiZardAdmin) {
