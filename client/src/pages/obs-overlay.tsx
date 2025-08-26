@@ -203,30 +203,30 @@ export default function OBSOverlayPage() {
                       bonus.isPlayed ? 'bg-green-500/20' : 'bg-gray-500/20'
                     }`}
                   >
-                    <TableCell className="text-gray-300 text-sm">{bonus.order}</TableCell>
-                    <TableCell className="text-white text-sm font-medium">
-                      <div className="flex items-center space-x-2">
+                    <TableCell className="text-gray-300 text-sm py-4">{bonus.order}</TableCell>
+                    <TableCell className="text-white text-sm font-medium py-4">
+                      <div className="flex items-center space-x-3">
                         {bonus.slotImageUrl && (
                           <img 
                             src={bonus.slotImageUrl} 
                             alt={bonus.slotName}
-                            className="w-6 h-6 rounded object-cover"
+                            className="w-10 h-10 rounded object-cover flex-shrink-0"
                           />
                         )}
-                        <span>{bonus.slotName}</span>
+                        <span className="font-semibold">{bonus.slotName}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-white text-sm">
+                    <TableCell className="text-white text-sm py-4 font-semibold">
                       {formatCurrency(Number(bonus.betAmount), hunt.currency as Currency)}
                     </TableCell>
-                    <TableCell className="text-yellow-400 text-sm">
+                    <TableCell className="text-yellow-400 text-sm py-4 font-semibold">
                       {bonus.multiplier ? `${Number(bonus.multiplier).toFixed(2)}x` : '-'}
                     </TableCell>
-                    <TableCell className="text-green-400 text-sm">
+                    <TableCell className="text-green-400 text-sm py-4 font-semibold">
                       {bonus.winAmount ? formatCurrency(Number(bonus.winAmount), hunt.currency as Currency) : '-'}
                     </TableCell>
-                    <TableCell className="text-sm">
-                      <span className={`px-2 py-1 rounded text-xs ${
+                    <TableCell className="text-sm py-4">
+                      <span className={`px-3 py-2 rounded-md text-xs font-medium ${
                         bonus.isPlayed ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
                       }`}>
                         {bonus.isPlayed ? 'Played' : 'Pending'}
@@ -270,33 +270,59 @@ export default function OBSOverlayPage() {
           </div>
 
           {/* Slots List */}
-          <div className="space-y-2 mb-4">
-            <div className="text-gray-400 text-sm text-center">Slots in Hunt</div>
-            <div className="max-h-40 overflow-y-auto space-y-1">
-              {bonuses.map((bonus) => (
+          <div className="space-y-3 mb-4">
+            <div className="text-gray-300 text-lg font-semibold text-center">Slots in Hunt</div>
+            
+            {/* Column Headers */}
+            <div className="grid grid-cols-4 gap-2 px-3 py-2 bg-gray-800/50 rounded text-xs font-medium text-gray-400">
+              <div>Slot Name</div>
+              <div className="text-center">Bet Size</div>
+              <div className="text-center">Payout</div>
+              <div className="text-center">Status</div>
+            </div>
+            
+            {/* Scrollable Slots */}
+            <div className="max-h-60 overflow-y-auto scrolling-slots space-y-2">
+              {bonuses.map((bonus, index) => (
                 <div 
                   key={bonus.id} 
-                  className={`flex items-center justify-between p-2 rounded text-xs ${
-                    bonus.isPlayed ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+                  className={`grid grid-cols-4 gap-2 items-center p-3 rounded-lg border transition-all duration-300 ${
+                    bonus.isPlayed 
+                      ? 'bg-green-500/20 border-green-500/30 text-green-400' 
+                      : 'bg-gray-500/20 border-gray-500/30 text-gray-300'
                   }`}
+                  style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-3">
                     {bonus.slotImageUrl && (
                       <img 
                         src={bonus.slotImageUrl} 
                         alt={bonus.slotName}
-                        className="w-4 h-4 rounded object-cover"
+                        className="w-8 h-8 rounded object-cover flex-shrink-0"
                       />
                     )}
-                    <span className="truncate">{bonus.slotName}</span>
+                    <span className="text-sm font-medium truncate">{bonus.slotName}</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span>{formatCurrency(Number(bonus.betAmount), hunt.currency as Currency)}</span>
-                    {bonus.isPlayed && bonus.winAmount && (
-                      <span className="text-green-400">
-                        → {formatCurrency(Number(bonus.winAmount), hunt.currency as Currency)}
-                      </span>
-                    )}
+                  
+                  <div className="text-center text-sm font-semibold">
+                    {formatCurrency(Number(bonus.betAmount), hunt.currency as Currency)}
+                  </div>
+                  
+                  <div className="text-center text-sm font-semibold">
+                    {bonus.isPlayed && bonus.winAmount 
+                      ? formatCurrency(Number(bonus.winAmount), hunt.currency as Currency)
+                      : '-'
+                    }
+                  </div>
+                  
+                  <div className="text-center">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      bonus.isPlayed 
+                        ? 'bg-green-500/30 text-green-300' 
+                        : 'bg-gray-500/30 text-gray-400'
+                    }`}>
+                      {bonus.isPlayed ? 'Played' : 'Pending'}
+                    </span>
                   </div>
                 </div>
               ))}

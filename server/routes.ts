@@ -146,8 +146,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         huntId: hunt.id,
         publicToken: hunt.publicToken,
+        url: `${req.protocol}://${req.get('host')}/public-hunt/${hunt.publicToken}`,
         publicUrl: `${req.protocol}://${req.get('host')}/public-hunt/${hunt.publicToken}`,
-        obsUrl: `${req.protocol}://${req.get('host')}/obs-overlay/latest`
+        obsUrl: `${req.protocol}://${req.get('host')}/obs-overlay/latest`,
+        liveObsUrl: `${req.protocol}://${req.get('host')}/live-obs-overlay`
       });
     } catch (error) {
       console.error('Error getting public link:', error);

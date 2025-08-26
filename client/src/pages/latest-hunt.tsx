@@ -165,7 +165,7 @@ export default function LatestHuntPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => copyToClipboard(publicLinks.publicLink)}
+                    onClick={() => copyToClipboard(publicLinks.publicUrl || publicLinks.publicLink)}
                     data-testid="button-copy-public-link"
                   >
                     <Copy className="w-4 h-4 mr-2" />
@@ -174,7 +174,7 @@ export default function LatestHuntPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(publicLinks.publicLink, '_blank')}
+                    onClick={() => window.open(publicLinks.publicUrl || publicLinks.publicLink, '_blank')}
                     data-testid="button-open-public-link"
                   >
                     <ExternalLink className="w-4 h-4 mr-2" />
@@ -195,7 +195,7 @@ export default function LatestHuntPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => copyToClipboard(publicLinks.obsOverlayLink)}
+                    onClick={() => copyToClipboard(publicLinks.obsUrl || publicLinks.obsOverlayLink)}
                     data-testid="button-copy-obs-link"
                   >
                     <Copy className="w-4 h-4 mr-2" />
@@ -204,7 +204,7 @@ export default function LatestHuntPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(publicLinks.obsOverlayLink, '_blank')}
+                    onClick={() => window.open(publicLinks.obsUrl || publicLinks.obsOverlayLink, '_blank')}
                     data-testid="button-open-obs-link"
                   >
                     <Monitor className="w-4 h-4 mr-2" />
