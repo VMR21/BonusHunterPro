@@ -26,6 +26,7 @@ export interface IStorage {
   getSlotByName(name: string): Promise<Slot | undefined>;
   createSlot(slot: InsertSlot): Promise<Slot>;
   bulkCreateSlots(slots: InsertSlot[]): Promise<void>;
+  clearSlots(): Promise<void>;
 
   // Meta
   getMeta(key: string): Promise<string | undefined>;
@@ -206,6 +207,10 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(hunts.createdAt))
       .limit(1);
     return result[0];
+  }
+
+  async clearSlots(): Promise<void> {
+    await db.delete(slotDatabase);
   }
 }
 

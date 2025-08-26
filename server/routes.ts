@@ -335,11 +335,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize slot database if empty
   app.post("/api/admin/init-slots", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
-      const existingSlots = await storage.getSlots();
-      if (existingSlots.length > 0) {
-        return res.json({ message: "Slots already initialized", count: existingSlots.length });
-      }
-
       // Read and parse the CSV file
       const csvData = fs.readFileSync('attached_assets/slots_1756197328567.csv', 'utf8');
       const slots = parse(csvData, { 
@@ -355,16 +350,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       })).filter(slot => slot.name && slot.provider);
       
       console.log('Sample slot data:', slotData.slice(0, 3));
+      console.log(`Parsed ${slotData.length} slots from CSV`);
 
+      // Always re-initialize by clearing first then adding
+      await storage.clearSlots();
       await storage.bulkCreateSlots(slotData);
+      
+      // Verify slots were added
+      const verifySlots = await storage.searchSlots('');
+      console.log(`Verification: ${verifySlots.length} slots in database`);
       
       res.json({ 
         message: "Slots initialized successfully", 
-        count: slotData.length 
+        count: verifySlots.length 
       });
     } catch (error) {
       console.error('Error initializing slots:', error);
-      res.status(500).json({ message: "Failed to initialize slots" });
+      res.status(500).json({ message: "Failed to initialize slots", error: error.message });
     }
   });
 
