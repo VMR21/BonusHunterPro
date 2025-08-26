@@ -1,32 +1,119 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { apiRequest } from "@/lib/queryClient";
 
+interface AuthState {
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  adminDisplayName?: string;
+  sessionToken?: string;
+}
+
 export function useAuth() {
-  const queryClient = useQueryClient();
-
-  const { data: user, isLoading, error } = useQuery({
-    queryKey: ["/api/user"],
-    retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+  const [authState, setAuthState] = useState<AuthState>({
+    isAuthenticated: false,
+    isLoading: true,
   });
 
-  const logoutMutation = useMutation({
-    mutationFn: () => fetch("/auth/logout", { method: "POST" }),
-    onSuccess: () => {
-      queryClient.setQueryData(["/api/user"], null);
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-    },
-  });
+  // Check authentication status on mount and when token changes
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
 
-  const logout = () => {
-    logoutMutation.mutate();
+  const checkAuthStatus = async () => {
+    const token = localStorage.getItem('adminSessionToken');
+    
+    if (!token) {
+      setAuthState({
+        isAuthenticated: false,
+        isLoading: false,
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/check', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAuthState({
+          isAuthenticated: data.isAdmin,
+          isLoading: false,
+          adminDisplayName: data.adminDisplayName,
+          sessionToken: token,
+        });
+      } else {
+        // Invalid token, remove it
+        localStorage.removeItem('adminSessionToken');
+        setAuthState({
+          isAuthenticated: false,
+          isLoading: false,
+        });
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      setAuthState({
+        isAuthenticated: false,
+        isLoading: false,
+      });
+    }
+  };
+
+  const login = async (adminKey: string): Promise<{ success: boolean; error?: string }> => {
+    setAuthState(prev => ({ ...prev, isLoading: true }));
+
+    try {
+      const response = await apiRequest('/api/admin/login', {
+        method: 'POST',
+        body: JSON.stringify({ adminKey }),
+      });
+
+      if (response.sessionToken) {
+        localStorage.setItem('adminSessionToken', response.sessionToken);
+        await checkAuthStatus(); // Refresh auth state
+        return { success: true };
+      } else {
+        return { success: false, error: 'Invalid response from server' };
+      }
+    } catch (error: any) {
+      setAuthState(prev => ({ ...prev, isLoading: false }));
+      return { 
+        success: false, 
+        error: error.message || 'Login failed' 
+      };
+    }
+  };
+
+  const logout = async () => {
+    const token = localStorage.getItem('adminSessionToken');
+    
+    if (token) {
+      try {
+        await fetch('/api/admin/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+      } catch (error) {
+        console.error('Logout request failed:', error);
+      }
+    }
+
+    localStorage.removeItem('adminSessionToken');
+    setAuthState({
+      isAuthenticated: false,
+      isLoading: false,
+    });
   };
 
   return {
-    user: user || null,
-    isLoading,
-    isAuthenticated: !!user && !error,
+    ...authState,
+    login,
     logout,
-    isLoggingOut: logoutMutation.isPending,
+    checkAuthStatus,
   };
 }

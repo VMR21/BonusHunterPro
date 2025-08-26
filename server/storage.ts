@@ -1,29 +1,53 @@
-import { hunts, bonuses, slotDatabase, meta, adminSessions, users } from "@shared/schema";
-import type { Hunt, InsertHunt, Bonus, InsertBonus, Slot, InsertSlot, Meta, AdminSession, User, InsertUser, HuntWithUser } from "@shared/schema";
-import { eq, desc, asc, sql } from "drizzle-orm";
+import {
+  hunts,
+  bonuses,
+  slotDatabase,
+  meta,
+  adminKeys,
+  adminSessions,
+  type Hunt,
+  type InsertHunt,
+  type Bonus,
+  type InsertBonus,
+  type Slot,
+  type InsertSlot,
+  type Meta,
+  type AdminKey,
+  type InsertAdminKey,
+  type HuntWithBonusCount,
+  type HuntWithAdmin,
+  type AdminSession,
+} from "@shared/schema";
+import { eq, desc, asc, sql, ilike } from "drizzle-orm";
 import { db } from "./db";
 
 export interface IStorage {
-  // Users
-  getUserById(id: string): Promise<User | undefined>;
-  getUserByGoogleId(googleId: string): Promise<User | undefined>;
-  getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  updateUser(id: string, user: Partial<User>): Promise<User | undefined>;
+  // Admin Keys
+  getAdminKeyByValue(keyValue: string): Promise<AdminKey | undefined>;
+  getAdminKeyById(id: string): Promise<AdminKey | undefined>;
+  createAdminKey(adminKey: InsertAdminKey): Promise<AdminKey>;
+  getAllAdminKeys(): Promise<AdminKey[]>;
+
+  // Admin Sessions
+  createAdminSession(adminKeyId: string, sessionToken: string, expiresAt: Date): Promise<AdminSession>;
+  getAdminSession(sessionToken: string): Promise<AdminSession | undefined>;
+  deleteAdminSession(sessionToken: string): Promise<boolean>;
+  cleanupExpiredSessions(): Promise<void>;
 
   // Hunts
   getHunts(): Promise<Hunt[]>;
-  getHuntsWithUsers(): Promise<HuntWithUser[]>;
-  getLiveHunts(): Promise<HuntWithUser[]>;
-  getUserHunts(userId: string): Promise<Hunt[]>;
+  getHuntsWithAdmin(): Promise<HuntWithAdmin[]>;
+  getLiveHunts(): Promise<HuntWithAdmin[]>;
+  getAdminHunts(adminKey: string): Promise<Hunt[]>;
   getHunt(id: string): Promise<Hunt | undefined>;
   getHuntByPublicToken(token: string): Promise<Hunt | undefined>;
-  createHunt(hunt: InsertHunt, userId: string): Promise<Hunt>;
+  createHunt(hunt: InsertHunt, adminKey: string): Promise<Hunt>;
   updateHunt(id: string, hunt: Partial<Hunt>): Promise<Hunt | undefined>;
   deleteHunt(id: string): Promise<boolean>;
 
   // Bonuses
   getBonusesByHuntId(huntId: string): Promise<Bonus[]>;
+  getAllLiveBonuses(): Promise<(Bonus & { huntTitle: string; adminDisplayName: string })[]>;
   getBonus(id: string): Promise<Bonus | undefined>;
   createBonus(bonus: InsertBonus): Promise<Bonus>;
   updateBonus(id: string, bonus: Partial<Bonus>): Promise<Bonus | undefined>;
@@ -49,40 +73,61 @@ export interface IStorage {
     totalSpent: number;
     totalWon: number;
   }>;
+  getAdminStats(adminKey: string): Promise<{
+    totalHunts: number;
+    activeHunts: number;
+    totalSpent: number;
+    totalWon: number;
+  }>;
 
   // Latest hunt
   getLatestHunt(): Promise<Hunt | undefined>;
+  getLatestAdminHunt(adminKey: string): Promise<Hunt | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
-  // User methods
-  async getUserById(id: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  // Admin Key methods
+  async getAdminKeyByValue(keyValue: string): Promise<AdminKey | undefined> {
+    const result = await db.select().from(adminKeys).where(eq(adminKeys.keyValue, keyValue)).limit(1);
     return result[0];
   }
 
-  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.googleId, googleId)).limit(1);
+  async getAdminKeyById(id: string): Promise<AdminKey | undefined> {
+    const result = await db.select().from(adminKeys).where(eq(adminKeys.id, id)).limit(1);
     return result[0];
   }
 
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  async createAdminKey(adminKey: InsertAdminKey): Promise<AdminKey> {
+    const result = await db.insert(adminKeys).values(adminKey).returning();
     return result[0];
   }
 
-  async createUser(user: InsertUser): Promise<User> {
-    const result = await db.insert(users).values(user).returning();
+  async getAllAdminKeys(): Promise<AdminKey[]> {
+    return await db.select().from(adminKeys).where(eq(adminKeys.isActive, true)).orderBy(asc(adminKeys.keyName));
+  }
+
+  // Admin Session methods
+  async createAdminSession(adminKeyId: string, sessionToken: string, expiresAt: Date): Promise<AdminSession> {
+    const result = await db.insert(adminSessions).values({
+      adminKeyId,
+      sessionToken,
+      expiresAt,
+    }).returning();
     return result[0];
   }
 
-  async updateUser(id: string, userUpdate: Partial<User>): Promise<User | undefined> {
-    const result = await db
-      .update(users)
-      .set({ ...userUpdate, updatedAt: new Date() })
-      .where(eq(users.id, id))
-      .returning();
+  async getAdminSession(sessionToken: string): Promise<AdminSession | undefined> {
+    const result = await db.select().from(adminSessions).where(eq(adminSessions.sessionToken, sessionToken)).limit(1);
     return result[0];
+  }
+
+  async deleteAdminSession(sessionToken: string): Promise<boolean> {
+    const result = await db.delete(adminSessions).where(eq(adminSessions.sessionToken, sessionToken));
+    return result.rowCount > 0;
+  }
+
+  async cleanupExpiredSessions(): Promise<void> {
+    await db.delete(adminSessions).where(sql`${adminSessions.expiresAt} < NOW()`);
   }
 
   // Hunt methods
@@ -90,38 +135,44 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(hunts).orderBy(desc(hunts.createdAt));
   }
 
-  async getHuntsWithUsers(): Promise<HuntWithUser[]> {
+  async getHuntsWithAdmin(): Promise<HuntWithAdmin[]> {
     const result = await db
-      .select()
+      .select({
+        hunt: hunts,
+        adminDisplayName: adminKeys.displayName,
+      })
       .from(hunts)
-      .leftJoin(users, eq(hunts.userId, users.id))
+      .leftJoin(adminKeys, eq(hunts.adminKey, adminKeys.keyValue))
       .orderBy(desc(hunts.createdAt));
     
     return result.map(r => ({
-      ...r.hunts,
-      user: r.users || { id: '', email: 'unknown@user.com', name: 'Unknown User', profileImage: null, googleId: null, createdAt: new Date(), updatedAt: new Date() }
+      ...r.hunt,
+      adminDisplayName: r.adminDisplayName || 'Unknown Admin'
     }));
   }
 
-  async getLiveHunts(): Promise<HuntWithUser[]> {
+  async getLiveHunts(): Promise<HuntWithAdmin[]> {
     const result = await db
-      .select()
+      .select({
+        hunt: hunts,
+        adminDisplayName: adminKeys.displayName,
+      })
       .from(hunts)
-      .leftJoin(users, eq(hunts.userId, users.id))
-      .where(eq(hunts.isLive, true))
+      .leftJoin(adminKeys, eq(hunts.adminKey, adminKeys.keyValue))
+      .where(eq(hunts.isPublic, true))
       .orderBy(desc(hunts.updatedAt));
     
     return result.map(r => ({
-      ...r.hunts,
-      user: r.users || { id: '', email: 'unknown@user.com', name: 'Unknown User', profileImage: null, googleId: null, createdAt: new Date(), updatedAt: new Date() }
+      ...r.hunt,
+      adminDisplayName: r.adminDisplayName || 'Unknown Admin'
     }));
   }
 
-  async getUserHunts(userId: string): Promise<Hunt[]> {
+  async getAdminHunts(adminKey: string): Promise<Hunt[]> {
     return await db
       .select()
       .from(hunts)
-      .where(eq(hunts.userId, userId))
+      .where(eq(hunts.adminKey, adminKey))
       .orderBy(desc(hunts.createdAt));
   }
 
@@ -135,8 +186,13 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async createHunt(hunt: InsertHunt, userId: string): Promise<Hunt> {
-    const result = await db.insert(hunts).values({ ...hunt, userId }).returning();
+  async createHunt(hunt: InsertHunt, adminKey: string): Promise<Hunt> {
+    const publicToken = Math.random().toString(36).substring(2, 15);
+    const result = await db.insert(hunts).values({
+      ...hunt,
+      adminKey,
+      publicToken,
+    }).returning();
     return result[0];
   }
 
@@ -154,12 +210,33 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount > 0;
   }
 
+  // Bonus methods
   async getBonusesByHuntId(huntId: string): Promise<Bonus[]> {
     return await db
       .select()
       .from(bonuses)
       .where(eq(bonuses.huntId, huntId))
       .orderBy(asc(bonuses.order));
+  }
+
+  async getAllLiveBonuses(): Promise<(Bonus & { huntTitle: string; adminDisplayName: string })[]> {
+    const result = await db
+      .select({
+        bonus: bonuses,
+        huntTitle: hunts.title,
+        adminDisplayName: adminKeys.displayName,
+      })
+      .from(bonuses)
+      .innerJoin(hunts, eq(bonuses.huntId, hunts.id))
+      .leftJoin(adminKeys, eq(hunts.adminKey, adminKeys.keyValue))
+      .where(eq(hunts.isPublic, true))
+      .orderBy(desc(hunts.updatedAt), asc(bonuses.order));
+
+    return result.map(r => ({
+      ...r.bonus,
+      huntTitle: r.huntTitle,
+      adminDisplayName: r.adminDisplayName || 'Unknown Admin'
+    }));
   }
 
   async getBonus(id: string): Promise<Bonus | undefined> {
@@ -186,15 +263,19 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount > 0;
   }
 
+  // Slot methods
   async getSlots(): Promise<Slot[]> {
     return await db.select().from(slotDatabase).orderBy(asc(slotDatabase.name));
   }
 
   async searchSlots(query: string): Promise<Slot[]> {
+    const searchTerm = `%${query}%`;
     return await db
       .select()
       .from(slotDatabase)
-      .where(sql`LOWER(${slotDatabase.name}) LIKE LOWER(${'%' + query + '%'})`)
+      .where(
+        ilike(slotDatabase.name, searchTerm)
+      )
       .orderBy(asc(slotDatabase.name))
       .limit(50);
   }
@@ -215,16 +296,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async bulkCreateSlots(slots: InsertSlot[]): Promise<void> {
-    if (slots.length === 0) return;
-    
-    // Use batch insert for better performance
-    const batchSize = 100;
-    for (let i = 0; i < slots.length; i += batchSize) {
-      const batch = slots.slice(i, i + batchSize);
-      await db.insert(slotDatabase).values(batch);
-    }
+    await db.insert(slotDatabase).values(slots);
   }
 
+  async clearSlots(): Promise<void> {
+    await db.delete(slotDatabase);
+  }
+
+  // Meta methods
   async getMeta(key: string): Promise<string | undefined> {
     const result = await db.select().from(meta).where(eq(meta.key, key)).limit(1);
     return result[0]?.value;
@@ -236,46 +315,84 @@ export class DatabaseStorage implements IStorage {
       .values({ key, value })
       .onConflictDoUpdate({
         target: meta.key,
-        set: { value }
+        set: { value },
       });
   }
 
+  // Stats methods
   async getStats(): Promise<{
     totalHunts: number;
     activeHunts: number;
     totalSpent: number;
     totalWon: number;
   }> {
-    const [totalHuntsResult] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(hunts);
-
-    const [activeHuntsResult] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(hunts)
-      .where(sql`${hunts.status} != 'completed'`);
-
-    const [spentResult] = await db
-      .select({ 
-        total: sql<number>`COALESCE(SUM(CAST(${hunts.startBalance} AS NUMERIC) - COALESCE(CAST(${hunts.endBalance} AS NUMERIC), 0)), 0)` 
+    const [huntsResult] = await db
+      .select({
+        totalHunts: sql<number>`count(*)::int`,
+        activeHunts: sql<number>`count(case when status != 'finished' then 1 end)::int`,
       })
       .from(hunts);
 
+    const [spentResult] = await db
+      .select({
+        totalSpent: sql<number>`coalesce(sum(${bonuses.betAmount}), 0)::numeric`,
+      })
+      .from(bonuses);
+
     const [wonResult] = await db
-      .select({ 
-        total: sql<number>`COALESCE(SUM(CAST(${bonuses.winAmount} AS NUMERIC)), 0)` 
+      .select({
+        totalWon: sql<number>`coalesce(sum(${bonuses.winAmount}), 0)::numeric`,
       })
       .from(bonuses)
       .where(sql`${bonuses.winAmount} IS NOT NULL`);
 
     return {
-      totalHunts: totalHuntsResult.count,
-      activeHunts: activeHuntsResult.count,
-      totalSpent: Number(spentResult.total) || 0,
-      totalWon: Number(wonResult.total) || 0,
+      totalHunts: huntsResult.totalHunts,
+      activeHunts: huntsResult.activeHunts,
+      totalSpent: Number(spentResult.totalSpent),
+      totalWon: Number(wonResult.totalWon),
     };
   }
 
+  async getAdminStats(adminKey: string): Promise<{
+    totalHunts: number;
+    activeHunts: number;
+    totalSpent: number;
+    totalWon: number;
+  }> {
+    const [huntsResult] = await db
+      .select({
+        totalHunts: sql<number>`count(*)::int`,
+        activeHunts: sql<number>`count(case when status != 'finished' then 1 end)::int`,
+      })
+      .from(hunts)
+      .where(eq(hunts.adminKey, adminKey));
+
+    const [spentResult] = await db
+      .select({
+        totalSpent: sql<number>`coalesce(sum(${bonuses.betAmount}), 0)::numeric`,
+      })
+      .from(bonuses)
+      .innerJoin(hunts, eq(bonuses.huntId, hunts.id))
+      .where(eq(hunts.adminKey, adminKey));
+
+    const [wonResult] = await db
+      .select({
+        totalWon: sql<number>`coalesce(sum(${bonuses.winAmount}), 0)::numeric`,
+      })
+      .from(bonuses)
+      .innerJoin(hunts, eq(bonuses.huntId, hunts.id))
+      .where(sql`${hunts.adminKey} = ${adminKey} AND ${bonuses.winAmount} IS NOT NULL`);
+
+    return {
+      totalHunts: huntsResult.totalHunts,
+      activeHunts: huntsResult.activeHunts,
+      totalSpent: Number(spentResult.totalSpent),
+      totalWon: Number(wonResult.totalWon),
+    };
+  }
+
+  // Latest hunt methods
   async getLatestHunt(): Promise<Hunt | undefined> {
     const result = await db
       .select()
@@ -285,8 +402,14 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async clearSlots(): Promise<void> {
-    await db.delete(slotDatabase);
+  async getLatestAdminHunt(adminKey: string): Promise<Hunt | undefined> {
+    const result = await db
+      .select()
+      .from(hunts)
+      .where(eq(hunts.adminKey, adminKey))
+      .orderBy(desc(hunts.createdAt))
+      .limit(1);
+    return result[0];
   }
 }
 

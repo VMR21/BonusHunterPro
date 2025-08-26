@@ -5,7 +5,7 @@ import { z } from "zod";
 
 export const hunts = pgTable("hunts", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id"), // Make nullable for migration
+  adminKey: text("admin_key").notNull(), // Each hunt belongs to an admin key
   title: text("title").notNull(),
   casino: text("casino").notNull(),
   currency: text("currency").notNull().default("USD"),
@@ -50,25 +50,20 @@ export const meta = pgTable("meta", {
   value: text("value"),
 });
 
-// User authentication tables
-export const users = pgTable("users", {
+// Admin authentication tables
+export const adminKeys = pgTable("admin_keys", {
   id: uuid("id").primaryKey().defaultRandom(),
-  email: text("email").notNull().unique(),
-  name: text("name").notNull(),
-  profileImage: text("profile_image"),
-  googleId: text("google_id").unique(),
+  keyName: text("key_name").notNull().unique(), // e.g., "admin1", "admin2", "streamer1"
+  keyValue: text("key_value").notNull().unique(), // The actual admin key
+  displayName: text("display_name").notNull(), // e.g., "Main Admin", "Streamer Account"
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const sessions = pgTable("sessions", {
-  sid: text("sid").primaryKey(),
-  sess: text("sess").notNull(), // JSON string
-  expire: timestamp("expire").notNull(),
-});
-
 export const adminSessions = pgTable("admin_sessions", {
   id: uuid("id").primaryKey().defaultRandom(),
+  adminKeyId: uuid("admin_key_id").notNull().references(() => adminKeys.id, { onDelete: "cascade" }),
   sessionToken: text("session_token").notNull().unique(),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -76,7 +71,7 @@ export const adminSessions = pgTable("admin_sessions", {
 
 export const insertHuntSchema = createInsertSchema(hunts).omit({
   id: true,
-  userId: true,
+  adminKey: true,
   createdAt: true,
   updatedAt: true,
   publicToken: true,
@@ -91,7 +86,7 @@ export const insertSlotSchema = createInsertSchema(slotDatabase).omit({
   id: true,
 });
 
-export const insertUserSchema = createInsertSchema(users).omit({
+export const insertAdminKeySchema = createInsertSchema(adminKeys).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -108,13 +103,13 @@ export const adminLoginSchema = z.object({
 export type InsertHunt = z.infer<typeof insertHuntSchema>;
 export type Hunt = typeof hunts.$inferSelect;
 export type HuntWithBonusCount = Hunt & { bonusCount: number };
-export type HuntWithUser = Hunt & { user: User };
+export type HuntWithAdmin = Hunt & { adminDisplayName: string };
 export type InsertBonus = z.infer<typeof insertBonusSchema>;
 export type Bonus = typeof bonuses.$inferSelect;
 export type InsertSlot = z.infer<typeof insertSlotSchema>;
 export type Slot = typeof slotDatabase.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export type InsertAdminKey = z.infer<typeof insertAdminKeySchema>;
+export type AdminKey = typeof adminKeys.$inferSelect;
 export type Meta = typeof meta.$inferSelect;
 export type AdminSession = typeof adminSessions.$inferSelect;
 export type PayoutInput = z.infer<typeof payoutSchema>;

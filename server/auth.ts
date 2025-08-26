@@ -1,105 +1,122 @@
-import { Request, Response, NextFunction } from "express";
-import { adminSessions } from "@shared/schema";
-import { db } from "./db";
-import { eq, gt } from "drizzle-orm";
-import crypto from "crypto";
+import { randomUUID } from "crypto";
+import { storage } from "./storage";
+import type { Request } from "express";
 
 export interface AuthenticatedRequest extends Request {
-  isAdmin?: boolean;
-  sessionToken?: string;
+  adminKey?: string;
+  adminDisplayName?: string;
 }
 
-// Admin authentication middleware
-export async function requireAdmin(
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-) {
-  try {
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: "Admin authentication required" });
-    }
-
-    const sessionToken = authHeader.substring(7);
-    
-    // Check if session token exists and is not expired
-    const session = await db
-      .select()
-      .from(adminSessions)
-      .where(eq(adminSessions.sessionToken, sessionToken))
-      .limit(1);
-
-    if (session.length === 0) {
-      return res.status(401).json({ error: "Invalid or expired session" });
-    }
-
-    const sessionData = session[0];
-    
-    // Check if session is expired
-    if (new Date() > sessionData.expiresAt) {
-      // Clean up expired session
-      await db
-        .delete(adminSessions)
-        .where(eq(adminSessions.sessionToken, sessionToken));
-      
-      return res.status(401).json({ error: "Session expired" });
-    }
-
-    req.isAdmin = true;
-    req.sessionToken = sessionToken;
-    next();
-  } catch (error) {
-    console.error('Admin auth error:', error);
-    res.status(500).json({ error: "Authentication failed" });
-  }
-}
-
-// Create admin session
-export async function createAdminSession(adminKey: string): Promise<string | null> {
-  // Verify admin key
-  if (adminKey !== process.env.ADMIN_KEY) {
+// Create admin session with 24-hour expiry
+export async function createAdminSession(adminKeyValue: string): Promise<string | null> {
+  const adminKey = await storage.getAdminKeyByValue(adminKeyValue);
+  
+  if (!adminKey || !adminKey.isActive) {
     return null;
   }
 
-  // Generate session token
-  const sessionToken = crypto.randomUUID();
-  
-  // Set expiration to 24 hours
-  const expiresAt = new Date();
-  expiresAt.setHours(expiresAt.getHours() + 24);
+  const sessionToken = randomUUID();
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-  // Clean up old sessions (optional - keeps database tidy)
-  await db
-    .delete(adminSessions)
-    .where(gt(adminSessions.expiresAt, new Date()));
-
-  // Create new session
-  await db.insert(adminSessions).values({
-    sessionToken,
-    expiresAt,
-  });
-
+  await storage.createAdminSession(adminKey.id, sessionToken, expiresAt);
   return sessionToken;
 }
 
-// Check if request has valid admin session
-export async function checkAdminSession(sessionToken: string): Promise<boolean> {
-  try {
-    const session = await db
-      .select()
-      .from(adminSessions)
-      .where(eq(adminSessions.sessionToken, sessionToken))
-      .limit(1);
+// Check if admin session is valid
+export async function checkAdminSession(sessionToken: string): Promise<{ valid: boolean; adminKey?: string; adminDisplayName?: string }> {
+  const session = await storage.getAdminSession(sessionToken);
+  
+  if (!session || session.expiresAt < new Date()) {
+    if (session) {
+      // Clean up expired session
+      await storage.deleteAdminSession(sessionToken);
+    }
+    return { valid: false };
+  }
 
-    if (session.length === 0) {
-      return false;
+  const adminKey = await storage.getAdminKeyById(session.adminKeyId);
+  if (!adminKey || !adminKey.isActive) {
+    return { valid: false };
+  }
+
+  return { 
+    valid: true, 
+    adminKey: adminKey.keyValue,
+    adminDisplayName: adminKey.displayName
+  };
+}
+
+// Middleware to require admin authentication
+export async function requireAdmin(req: AuthenticatedRequest, res: any, next: any) {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+
+  const sessionToken = authHeader.substring(7);
+  const sessionCheck = await checkAdminSession(sessionToken);
+  
+  if (!sessionCheck.valid) {
+    return res.status(401).json({ error: "Invalid or expired session" });
+  }
+
+  req.adminKey = sessionCheck.adminKey;
+  req.adminDisplayName = sessionCheck.adminDisplayName;
+  next();
+}
+
+// Middleware for optional admin authentication
+export async function optionalAdmin(req: AuthenticatedRequest, res: any, next: any) {
+  const authHeader = req.headers.authorization;
+  
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const sessionToken = authHeader.substring(7);
+    const sessionCheck = await checkAdminSession(sessionToken);
+    
+    if (sessionCheck.valid) {
+      req.adminKey = sessionCheck.adminKey;
+      req.adminDisplayName = sessionCheck.adminDisplayName;
+    }
+  }
+  
+  next();
+}
+
+// Initialize default admin keys if none exist
+export async function initializeAdminKeys(): Promise<void> {
+  const existingKeys = await storage.getAllAdminKeys();
+  
+  if (existingKeys.length === 0) {
+    // Create default admin keys
+    const defaultKeys = [
+      {
+        keyName: "admin1",
+        keyValue: process.env.ADMIN_KEY || "admin123",
+        displayName: "Main Admin",
+        isActive: true,
+      },
+      {
+        keyName: "admin2", 
+        keyValue: "admin456",
+        displayName: "Secondary Admin",
+        isActive: true,
+      },
+      {
+        keyName: "streamer1",
+        keyValue: "streamer789",
+        displayName: "Streamer Account",
+        isActive: true,
+      }
+    ];
+
+    for (const key of defaultKeys) {
+      await storage.createAdminKey(key);
     }
 
-    return new Date() <= session[0].expiresAt;
-  } catch (error) {
-    console.error('Session check error:', error);
-    return false;
+    console.log("✅ Initialized default admin keys:");
+    console.log("  - Main Admin: " + (process.env.ADMIN_KEY || "admin123"));
+    console.log("  - Secondary Admin: admin456");
+    console.log("  - Streamer Account: streamer789");
   }
 }

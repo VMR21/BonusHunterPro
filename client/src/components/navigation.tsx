@@ -1,20 +1,16 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Dice6, Trophy, Settings, Eye, Key, LogOut, Users } from "lucide-react";
+import { Dice6, Trophy, Eye, Key, LogOut, Users } from "lucide-react";
 import { useStats } from "@/hooks/use-hunts";
-import { useAdmin } from "@/hooks/use-admin";
 import { useAuth } from "@/hooks/useAuth";
-import { AdminLoginModal } from "@/components/admin-login-modal";
-import { LoginButton } from "@/components/LoginButton";
-import { UserMenu } from "@/components/UserMenu";
+import { LoginModal } from "@/components/login-modal";
 import { Button } from "@/components/ui/button";
 
 export function Navigation() {
   const [location] = useLocation();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { data: stats } = useStats();
-  const { isAdmin, logout: adminLogout } = useAdmin();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, adminDisplayName, logout } = useAuth();
 
   // Navigation items based on authentication status
   const navItems = [
@@ -22,8 +18,6 @@ export function Navigation() {
     { path: "/live", label: "Live Hunts", icon: Users },
     ...(isAuthenticated ? [
       { path: "/my-hunts", label: "My Hunts", icon: Trophy },
-    ] : []),
-    ...(isAdmin ? [
       { path: "/obs", label: "OBS Overlay", icon: Eye },
     ] : []),
   ];
@@ -59,43 +53,28 @@ export function Navigation() {
               <span>{stats?.totalHunts || 0}</span> Hunts Created
             </div>
             
-            {/* User Authentication Section */}
+            {/* Authentication Section */}
             {isAuthenticated ? (
-              <UserMenu />
-            ) : (
-              <LoginButton />
-            )}
-            
-            {/* Admin Section (separate from user auth) */}
-            {isAdmin ? (
-              <>
-                <Link href="/admin">
-                  <button 
-                    className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition-colors"
-                    data-testid="button-new-hunt"
-                  >
-                    <Trophy className="w-4 h-4 mr-2 inline" />
-                    New Hunt
-                  </button>
-                </Link>
+              <div className="flex items-center space-x-4">
+                <div className="text-sm text-gray-300">
+                  <span className="text-primary">{adminDisplayName}</span>
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={adminLogout}
-                  className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
-                  data-testid="button-admin-logout"
+                  onClick={logout}
+                  className="bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
+                  data-testid="button-logout"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
-                  Admin Logout
+                  Logout
                 </Button>
-              </>
+              </div>
             ) : (
               <Button
-                variant="outline"
-                size="sm"
                 onClick={() => setShowLoginModal(true)}
-                className="text-primary hover:text-primary/90 border-primary/20 hover:border-primary/30"
-                data-testid="button-admin-login"
+                className="bg-primary hover:bg-primary/90 text-white"
+                data-testid="button-login"
               >
                 <Key className="w-4 h-4 mr-2" />
                 Admin Login
@@ -105,7 +84,7 @@ export function Navigation() {
         </div>
       </div>
       
-      <AdminLoginModal 
+      <LoginModal 
         open={showLoginModal} 
         onOpenChange={setShowLoginModal} 
       />
