@@ -1,33 +1,58 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Trash2, Plus, Edit, Save, X, Key, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Key, Trash2, Users } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import type { AdminKey } from "@shared/schema";
+
+interface EditingKey {
+  id: string;
+  displayName: string;
+  keyName: string;
+  expiresAt: string;
+  isActive: boolean;
+}
 
 export default function AdminKeys() {
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newKey, setNewKey] = useState({ keyValue: "", displayName: "" });
+  const [editingKey, setEditingKey] = useState<EditingKey | null>(null);
+  const [newKey, setNewKey] = useState({
+    keyValue: "",
+    displayName: "",
+    keyName: "",
+    expiresAt: "",
+  });
+  
   const { toast } = useToast();
+  const { adminKey } = useAuth();
+  const queryClient = useQueryClient();
+
+  // Check if user is GambiZard admin
+  const isGambiZardAdmin = adminKey === "GZ-239-2932-92302";
 
   const { data: adminKeys = [], isLoading } = useQuery<AdminKey[]>({
     queryKey: ["/api/admin/keys"],
+    enabled: isGambiZardAdmin,
   });
 
   const createKeyMutation = useMutation({
-    mutationFn: async (keyData: { keyValue: string; displayName: string }) => {
-      const response = await apiRequest("POST", "/api/admin/keys", keyData);
-      return response.json();
+    mutationFn: async (keyData: typeof newKey) => {
+      return await apiRequest("/api/admin/keys", {
+        method: "POST",
+        body: JSON.stringify(keyData),
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/keys"] });
       setShowCreateModal(false);
-      setNewKey({ keyValue: "", displayName: "" });
+      setNewKey({ keyValue: "", displayName: "", keyName: "", expiresAt: "" });
       toast({
         title: "Success",
         description: "Admin key created successfully!",
@@ -42,9 +67,35 @@ export default function AdminKeys() {
     },
   });
 
+  const updateKeyMutation = useMutation({
+    mutationFn: async ({ id, ...data }: EditingKey) => {
+      return await apiRequest(`/api/admin/keys/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/keys"] });
+      setEditingKey(null);
+      toast({
+        title: "Success",
+        description: "Admin key updated successfully!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update admin key",
+        variant: "destructive",
+      });
+    },
+  });
+
   const deleteKeyMutation = useMutation({
     mutationFn: async (keyId: string) => {
-      await apiRequest("DELETE", `/api/admin/keys/${keyId}`, {});
+      return await apiRequest(`/api/admin/keys/${keyId}`, {
+        method: "DELETE",
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/keys"] });
@@ -65,10 +116,10 @@ export default function AdminKeys() {
   const handleCreateKey = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newKey.keyValue.trim() || !newKey.displayName.trim()) {
+    if (!newKey.keyValue.trim() || !newKey.displayName.trim() || !newKey.keyName.trim()) {
       toast({
         title: "Error",
-        description: "Please fill in all fields",
+        description: "Please fill in all required fields",
         variant: "destructive",
       });
       return;
@@ -77,92 +128,122 @@ export default function AdminKeys() {
     createKeyMutation.mutate(newKey);
   };
 
-  const handleDeleteKey = (keyId: string, displayName: string) => {
-    if (confirm(`Are you sure you want to delete the admin key for "${displayName}"?`)) {
-      deleteKeyMutation.mutate(keyId);
-    }
+  const handleUpdateKey = () => {
+    if (!editingKey) return;
+    updateKeyMutation.mutate(editingKey);
   };
 
-  if (isLoading) {
+  const startEditing = (key: AdminKey) => {
+    setEditingKey({
+      id: key.id,
+      displayName: key.displayName,
+      keyName: key.keyName,
+      expiresAt: key.expiresAt ? new Date(key.expiresAt).toISOString().split('T')[0] : "",
+      isActive: key.isActive,
+    });
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "Never";
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  if (!isGambiZardAdmin) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 p-4">
+      <div className="min-h-screen bg-background p-6">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center py-20">
-            <Key className="w-16 h-16 text-primary mx-auto mb-4" />
-            <h1 className="text-3xl font-bold text-white mb-4">Loading Admin Keys...</h1>
-          </div>
+          <Card>
+            <CardContent className="p-8 text-center">
+              <Key className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+              <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
+              <p className="text-muted-foreground">
+                Admin key management is restricted to GambiZard admin only.
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 p-4">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-4">
-            Admin Key Management
-          </h1>
-          <p className="text-gray-300 text-lg mb-6">
-            Manage admin keys for the multi-admin bonus hunting platform
-          </p>
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Admin Key Management</h1>
+            <p className="text-muted-foreground mt-2">
+              Manage admin keys and their permissions
+            </p>
+          </div>
           
           <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
             <DialogTrigger asChild>
-              <Button
-                className="bg-primary hover:bg-primary/90 text-white px-6 py-3 text-lg"
-                data-testid="button-create-key"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Create New Admin Key
+              <Button data-testid="button-create-key">
+                <Plus className="w-4 h-4 mr-2" />
+                Create New Key
               </Button>
             </DialogTrigger>
-            <DialogContent data-testid="create-key-modal">
+            <DialogContent>
               <DialogHeader>
                 <DialogTitle>Create New Admin Key</DialogTitle>
-                <DialogDescription>
-                  Add a new admin key that can be used to login and manage hunts
-                </DialogDescription>
               </DialogHeader>
-              
               <form onSubmit={handleCreateKey} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="displayName">Display Name</Label>
+                <div>
+                  <Label htmlFor="keyName">Key Name *</Label>
                   <Input
-                    id="displayName"
-                    placeholder="e.g., Main Admin, Streamer Account"
-                    value={newKey.displayName}
-                    onChange={(e) => setNewKey(prev => ({ ...prev, displayName: e.target.value }))}
-                    data-testid="input-display-name"
+                    id="keyName"
+                    value={newKey.keyName}
+                    onChange={(e) => setNewKey({ ...newKey, keyName: e.target.value })}
+                    placeholder="e.g., admin1, streamer1"
+                    data-testid="input-key-name"
                   />
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="keyValue">Admin Key</Label>
+                <div>
+                  <Label htmlFor="keyValue">Key Value *</Label>
                   <Input
                     id="keyValue"
-                    placeholder="e.g., admin123, streamer789"
                     value={newKey.keyValue}
-                    onChange={(e) => setNewKey(prev => ({ ...prev, keyValue: e.target.value }))}
+                    onChange={(e) => setNewKey({ ...newKey, keyValue: e.target.value })}
+                    placeholder="e.g., AB-123-456-789"
                     data-testid="input-key-value"
                   />
                 </div>
-                
-                <div className="flex justify-end gap-2">
+                <div>
+                  <Label htmlFor="displayName">Display Name *</Label>
+                  <Input
+                    id="displayName"
+                    value={newKey.displayName}
+                    onChange={(e) => setNewKey({ ...newKey, displayName: e.target.value })}
+                    placeholder="e.g., Main Admin, Streamer Account"
+                    data-testid="input-display-name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="expiresAt">Expiration Date (Optional)</Label>
+                  <Input
+                    id="expiresAt"
+                    type="date"
+                    value={newKey.expiresAt}
+                    onChange={(e) => setNewKey({ ...newKey, expiresAt: e.target.value })}
+                    data-testid="input-expires-at"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="submit"
+                    disabled={createKeyMutation.isPending}
+                    data-testid="button-save-key"
+                  >
+                    {createKeyMutation.isPending ? "Creating..." : "Create Key"}
+                  </Button>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setShowCreateModal(false)}
-                    data-testid="button-cancel"
+                    data-testid="button-cancel-create"
                   >
                     Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={createKeyMutation.isPending}
-                    data-testid="button-create"
-                  >
-                    {createKeyMutation.isPending ? "Creating..." : "Create Key"}
                   </Button>
                 </div>
               </form>
@@ -170,75 +251,159 @@ export default function AdminKeys() {
           </Dialog>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {adminKeys.map((key) => (
-            <Card key={key.id} className="bg-gray-800/50 border-gray-700">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <Key className="w-5 h-5 text-primary" />
-                  {key.displayName}
-                </CardTitle>
-                <CardDescription>
-                  Admin Key: <span className="font-mono text-primary">{key.keyValue}</span>
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-400">Created:</span>
-                  <span className="text-white">
-                    {new Date(key.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-400">Status:</span>
-                  <span className="text-green-400">Active</span>
-                </div>
-                
-                <div className="pt-2">
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDeleteKey(key.id, key.displayName)}
-                    disabled={deleteKeyMutation.isPending}
-                    className="w-full"
-                    data-testid={`button-delete-${key.id}`}
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete Key
+        {isLoading ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <p>Loading admin keys...</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4">
+            {adminKeys.map((key) => (
+              <Card key={key.id}>
+                <CardContent className="p-6">
+                  {editingKey?.id === key.id ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor={`edit-keyName-${key.id}`}>Key Name</Label>
+                          <Input
+                            id={`edit-keyName-${key.id}`}
+                            value={editingKey.keyName}
+                            onChange={(e) => setEditingKey({ ...editingKey, keyName: e.target.value })}
+                            data-testid={`input-edit-key-name-${key.id}`}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`edit-displayName-${key.id}`}>Display Name</Label>
+                          <Input
+                            id={`edit-displayName-${key.id}`}
+                            value={editingKey.displayName}
+                            onChange={(e) => setEditingKey({ ...editingKey, displayName: e.target.value })}
+                            data-testid={`input-edit-display-name-${key.id}`}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor={`edit-expiresAt-${key.id}`}>Expiration Date</Label>
+                          <Input
+                            id={`edit-expiresAt-${key.id}`}
+                            type="date"
+                            value={editingKey.expiresAt}
+                            onChange={(e) => setEditingKey({ ...editingKey, expiresAt: e.target.value })}
+                            data-testid={`input-edit-expires-at-${key.id}`}
+                          />
+                        </div>
+                        <div className="flex items-center space-x-2 mt-6">
+                          <Switch
+                            id={`edit-isActive-${key.id}`}
+                            checked={editingKey.isActive}
+                            onCheckedChange={(checked) => setEditingKey({ ...editingKey, isActive: checked })}
+                            data-testid={`switch-edit-is-active-${key.id}`}
+                          />
+                          <Label htmlFor={`edit-isActive-${key.id}`}>Active</Label>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleUpdateKey}
+                          disabled={updateKeyMutation.isPending}
+                          data-testid={`button-save-edit-${key.id}`}
+                        >
+                          <Save className="w-4 h-4 mr-2" />
+                          {updateKeyMutation.isPending ? "Saving..." : "Save"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setEditingKey(null)}
+                          data-testid={`button-cancel-edit-${key.id}`}
+                        >
+                          <X className="w-4 h-4 mr-2" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between items-start">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Display Name</p>
+                          <p className="font-medium" data-testid={`text-display-name-${key.id}`}>
+                            {key.displayName}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Key Name</p>
+                          <p className="font-medium" data-testid={`text-key-name-${key.id}`}>
+                            {key.keyName}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Key Value</p>
+                          <p className="font-mono text-sm" data-testid={`text-key-value-${key.id}`}>
+                            {key.keyValue}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Status</p>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${key.isActive ? 'bg-green-500' : 'bg-red-500'}`} />
+                            <span className="text-sm" data-testid={`text-status-${key.id}`}>
+                              {key.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Expires</p>
+                          <p className="text-sm" data-testid={`text-expires-${key.id}`}>
+                            <Calendar className="w-3 h-3 inline mr-1" />
+                            {formatDate(key.expiresAt)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => startEditing(key)}
+                          data-testid={`button-edit-${key.id}`}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deleteKeyMutation.mutate(key.id)}
+                          disabled={deleteKeyMutation.isPending}
+                          data-testid={`button-delete-${key.id}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+            
+            {adminKeys.length === 0 && (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <Key className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-lg font-semibold mb-2">No Admin Keys</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Create your first admin key to get started.
+                  </p>
+                  <Button onClick={() => setShowCreateModal(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create First Key
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {adminKeys.length === 0 && (
-          <div className="text-center py-20">
-            <Users className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-semibold text-white mb-2">No admin keys yet</h2>
-            <p className="text-gray-400 mb-6">Create your first admin key to get started!</p>
-            <Button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-primary hover:bg-primary/90 text-white"
-              data-testid="button-create-first-key"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Create First Admin Key
-            </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
-
-        <div className="mt-12 bg-gray-800/30 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">How to Use Admin Keys</h3>
-          <div className="space-y-2 text-gray-300">
-            <p>• Each admin key provides separate login access to the platform</p>
-            <p>• Admin keys have isolated bonus hunts and OBS overlays</p>
-            <p>• All bonus hunts from all admins appear in the unified Live Hunts view</p>
-            <p>• Share admin keys with trusted users who need platform access</p>
-            <p>• Delete keys immediately if they become compromised</p>
-          </div>
-        </div>
       </div>
     </div>
   );

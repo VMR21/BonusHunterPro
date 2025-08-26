@@ -378,9 +378,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin Key Management Routes
-  app.get("/api/admin/keys", async (req, res) => {
+  // Admin Key Management Routes - Only for GambiZard admin
+  app.get("/api/admin/keys", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
+      // Only allow GambiZard admin to access admin key management
+      if (req.adminKey !== "GZ-239-2932-92302") {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
       const adminKeys = await storage.getAllAdminKeys();
       res.json(adminKeys);
     } catch (error) {
@@ -389,12 +394,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/keys", async (req, res) => {
+  app.post("/api/admin/keys", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
-      const { keyValue, displayName } = req.body;
+      // Only allow GambiZard admin to create admin keys
+      if (req.adminKey !== "GZ-239-2932-92302") {
+        return res.status(403).json({ error: "Access denied" });
+      }
       
-      if (!keyValue || !displayName) {
-        return res.status(400).json({ error: "Key value and display name are required" });
+      const { keyValue, displayName, keyName, expiresAt } = req.body;
+      
+      if (!keyValue || !displayName || !keyName) {
+        return res.status(400).json({ error: "Key value, display name, and key name are required" });
       }
 
       // Check if key already exists
@@ -406,7 +416,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const adminKey = await storage.createAdminKey({
         keyValue,
         displayName,
-        createdAt: new Date(),
+        keyName,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
       });
 
       res.status(201).json(adminKey);
@@ -416,8 +427,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/keys/:id", async (req, res) => {
+  app.put("/api/admin/keys/:id", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
+      // Only allow GambiZard admin to edit admin keys
+      if (req.adminKey !== "GZ-239-2932-92302") {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const { displayName, keyName, expiresAt, isActive } = req.body;
+      
+      const adminKey = await storage.updateAdminKey(req.params.id, {
+        displayName,
+        keyName,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        isActive,
+      });
+      
+      if (!adminKey) {
+        return res.status(404).json({ error: "Admin key not found" });
+      }
+
+      res.json(adminKey);
+    } catch (error) {
+      console.error('Error updating admin key:', error);
+      res.status(500).json({ error: "Failed to update admin key" });
+    }
+  });
+
+  app.delete("/api/admin/keys/:id", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      // Only allow GambiZard admin to delete admin keys
+      if (req.adminKey !== "GZ-239-2932-92302") {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
       const adminKey = await storage.getAdminKeyById(req.params.id);
       if (!adminKey) {
         return res.status(404).json({ error: "Admin key not found" });

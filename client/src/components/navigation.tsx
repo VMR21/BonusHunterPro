@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Dice6, Trophy, Eye, Key, LogOut, Users } from "lucide-react";
-import { useStats } from "@/hooks/use-hunts";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { LoginModal } from "@/components/login-modal";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 export function Navigation() {
   const [location] = useLocation();
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const { data: stats } = useStats();
-  const { isAuthenticated, adminDisplayName, logout } = useAuth();
+  const { data: stats = {} } = useQuery({ queryKey: ["/api/stats"] });
+  const { isAuthenticated, adminDisplayName, adminKey, logout } = useAuth();
 
   // Navigation items based on authentication status
   const navItems = [
@@ -19,8 +19,11 @@ export function Navigation() {
     ...(isAuthenticated ? [
       { path: "/my-hunts", label: "My Hunts", icon: Trophy },
       { path: "/obs", label: "OBS Overlay", icon: Eye },
+      // Only show Admin Keys for GambiZard admin
+      ...(adminKey === "GZ-239-2932-92302" ? [
+        { path: "/admin-keys", label: "Admin Keys", icon: Key },
+      ] : []),
     ] : []),
-    { path: "/admin-keys", label: "Admin Keys", icon: Key },
   ];
 
   return (

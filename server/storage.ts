@@ -26,6 +26,7 @@ export interface IStorage {
   getAdminKeyByValue(keyValue: string): Promise<AdminKey | undefined>;
   getAdminKeyById(id: string): Promise<AdminKey | undefined>;
   createAdminKey(adminKey: InsertAdminKey): Promise<AdminKey>;
+  updateAdminKey(id: string, adminKey: Partial<AdminKey>): Promise<AdminKey | undefined>;
   getAllAdminKeys(): Promise<AdminKey[]>;
   deleteAdminKey(id: string): Promise<boolean>;
 
@@ -107,9 +108,18 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(adminKeys).orderBy(asc(adminKeys.displayName));
   }
 
+  async updateAdminKey(id: string, adminKey: Partial<AdminKey>): Promise<AdminKey | undefined> {
+    const result = await db
+      .update(adminKeys)
+      .set({ ...adminKey, updatedAt: new Date() })
+      .where(eq(adminKeys.id, id))
+      .returning();
+    return result[0];
+  }
+
   async deleteAdminKey(id: string): Promise<boolean> {
     const result = await db.delete(adminKeys).where(eq(adminKeys.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Admin Session methods
@@ -129,7 +139,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAdminSession(sessionToken: string): Promise<boolean> {
     const result = await db.delete(adminSessions).where(eq(adminSessions.sessionToken, sessionToken));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async cleanupExpiredSessions(): Promise<void> {
@@ -213,7 +223,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteHunt(id: string): Promise<boolean> {
     const result = await db.delete(hunts).where(eq(hunts.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Bonus methods
@@ -266,7 +276,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteBonus(id: string): Promise<boolean> {
     const result = await db.delete(bonuses).where(eq(bonuses.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Slot methods

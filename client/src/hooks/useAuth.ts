@@ -5,6 +5,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   adminDisplayName?: string;
+  adminKey?: string;
   sessionToken?: string;
 }
 
@@ -43,6 +44,7 @@ export function useAuth() {
           isAuthenticated: data.isAdmin,
           isLoading: false,
           adminDisplayName: data.adminDisplayName,
+          adminKey: data.adminKey,
           sessionToken: token,
         });
       } else {
