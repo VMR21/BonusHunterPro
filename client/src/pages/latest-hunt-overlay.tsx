@@ -75,10 +75,10 @@ export default function LatestHuntOverlay() {
   const progressPercentage = totalBonuses > 0 ? (openedBonuses.length / totalBonuses) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-transparent text-white p-8 overflow-hidden">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen w-full bg-transparent text-white overflow-hidden flex flex-col">
+      <div className="w-full h-full p-4 flex flex-col">
         {/* Hunt Header Stats */}
-        <div className="p-6 mb-6">
+        <div className="bg-black/90 backdrop-blur-sm rounded-lg p-6 mb-4 border border-purple-500/50">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-3xl font-bold text-purple-300">{hunt.title}</h1>
             <Badge className="bg-purple-600 text-white px-3 py-1">
@@ -126,7 +126,7 @@ export default function LatestHuntOverlay() {
 
         {/* Next Bonus Highlight */}
         {nextBonus && (
-          <div className="p-4 mb-6 animate-pulse">
+          <div className="bg-yellow-500/20 backdrop-blur-sm rounded-lg p-4 mb-4 border border-yellow-500/50 animate-pulse">
             <div className="flex items-center gap-4">
               <div className="text-yellow-400 font-bold text-lg">NEXT:</div>
               <div className="w-12 h-16 rounded overflow-hidden flex-shrink-0">
@@ -148,11 +148,11 @@ export default function LatestHuntOverlay() {
         )}
 
         {/* Slots in Hunt Table */}
-        <div className="p-6">
+        <div className="bg-black/90 backdrop-blur-sm rounded-lg p-6 border border-purple-500/50 flex-1">
           <h2 className="text-xl font-bold text-purple-300 mb-4">Slots in Hunt</h2>
           
           {/* Table Header */}
-          <div className="grid grid-cols-6 gap-4 mb-4 px-4 py-2">
+          <div className="grid grid-cols-6 gap-4 mb-4 px-4 py-2 bg-gray-800/50 rounded-lg">
             <div className="text-center text-gray-300 text-sm font-medium">#</div>
             <div className="text-left text-gray-300 text-sm font-medium">Slot</div>
             <div className="text-center text-gray-300 text-sm font-medium">Bet Size</div>
@@ -162,7 +162,7 @@ export default function LatestHuntOverlay() {
           </div>
 
           {/* Scrolling Slots */}
-          <div className="relative overflow-hidden h-96">
+          <div className="relative overflow-hidden flex-1" style={{ height: 'calc(100vh - 400px)' }}>
             <div className="space-y-6 animate-scroll">
               {bonuses?.map((bonus: any, index: number) => {
                 const isNext = hunt.isPlaying && !bonus.isPlayed && 

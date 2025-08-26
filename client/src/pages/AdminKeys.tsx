@@ -37,9 +37,10 @@ export default function AdminKeys() {
   // Check if user is GambiZard admin
   const isGambiZardAdmin = adminKey === "GZ-239-2932-92302";
 
-  const { data: adminKeys = [], isLoading } = useQuery<AdminKey[]>({
+  const { data: adminKeys = [], isLoading, refetch } = useQuery<AdminKey[]>({
     queryKey: ["/api/admin/keys"],
     enabled: isGambiZardAdmin,
+    refetchInterval: 5000, // Real-time updates every 5 seconds
   });
 
   const createKeyMutation = useMutation({
@@ -52,6 +53,7 @@ export default function AdminKeys() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/keys"] });
+      refetch(); // Immediate refresh for real-time updates
       setShowCreateModal(false);
       setNewKey({ keyValue: "", displayName: "", keyName: "", expiresAt: "" });
       toast({
@@ -78,6 +80,7 @@ export default function AdminKeys() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/keys"] });
+      refetch(); // Immediate refresh for real-time updates
       setEditingKey(null);
       toast({
         title: "Success",
@@ -102,6 +105,7 @@ export default function AdminKeys() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/keys"] });
+      refetch(); // Immediate refresh for real-time updates
       toast({
         title: "Success",
         description: "Admin key deleted successfully!",
@@ -176,18 +180,27 @@ export default function AdminKeys() {
           <div>
             <h1 className="text-3xl font-bold">Admin Key Management</h1>
             <p className="text-muted-foreground mt-2">
-              Manage admin keys and their permissions
+              Manage admin keys and their permissions • Updates every 5 seconds
             </p>
           </div>
           
-          <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-            <DialogTrigger asChild>
-              <Button data-testid="button-create-key">
-                <Plus className="w-4 h-4 mr-2" />
-                Create New Key
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isLoading}
+              data-testid="button-refresh-keys"
+            >
+              {isLoading ? "Refreshing..." : "Refresh Now"}
+            </Button>
+            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+              <DialogTrigger asChild>
+                <Button data-testid="button-create-key">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create New Key
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
               <DialogHeader>
                 <DialogTitle>Create New Admin Key</DialogTitle>
               </DialogHeader>
@@ -250,8 +263,9 @@ export default function AdminKeys() {
                   </Button>
                 </div>
               </form>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {isLoading ? (

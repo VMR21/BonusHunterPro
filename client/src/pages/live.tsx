@@ -2,9 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trophy, User, Clock, DollarSign } from "lucide-react";
+import { Trophy, User, Clock, DollarSign, Eye } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 interface LiveHunt {
   id: string;
@@ -27,6 +28,7 @@ export default function LiveHuntsPage() {
   });
   
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const getStatusDisplay = (hunt: LiveHunt) => {
     if (hunt.isPlaying) {
@@ -40,6 +42,10 @@ export default function LiveHuntsPage() {
       default:
         return { label: hunt.status?.toUpperCase() || "UNKNOWN", color: "bg-gray-600", textColor: "text-white" };
     }
+  };
+
+  const handleViewHunt = (huntId: string) => {
+    setLocation(`/hunt/${huntId}`);
   };
 
   if (isLoading) {
@@ -140,6 +146,18 @@ export default function LiveHuntsPage() {
                       </Badge>
                     </div>
                   )}
+
+                  <div className="flex gap-2 mt-4">
+                    <Button 
+                      onClick={() => handleViewHunt(hunt.id)}
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1 border-purple-600 text-purple-300 hover:bg-purple-600 hover:text-white"
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      View Hunt
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
