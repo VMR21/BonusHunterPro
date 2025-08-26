@@ -104,16 +104,7 @@ export function HuntCard({ hunt, bonusCount = 0 }: HuntCardProps) {
               View Details
             </button>
           </Link>
-          {hunt.publicToken && (
-            <Link href={`/public/${hunt.publicToken}`} className="flex-1">
-              <button 
-                className="w-full bg-secondary hover:bg-secondary/90 text-white py-2 rounded-lg transition-colors text-sm"
-                data-testid={`button-public-view-${hunt.id}`}
-              >
-                Public View
-              </button>
-            </Link>
-          )}
+
           {isAdmin && (
             <Button
               variant="destructive"
