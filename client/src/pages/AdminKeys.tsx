@@ -195,6 +195,9 @@ export default function AdminKeys() {
               <DialogContent>
               <DialogHeader>
                 <DialogTitle>Create New Admin Key</DialogTitle>
+                <DialogDescription>
+                  Create a new admin key with optional expiration date. Keys provide access to the admin panel.
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreateKey} className="space-y-4">
                 <div>

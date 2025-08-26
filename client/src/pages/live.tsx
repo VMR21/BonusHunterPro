@@ -40,7 +40,7 @@ export default function LiveHuntsPage() {
     enabled: !!selectedHunt,
   });
 
-  const { data: huntBonuses = [] } = useQuery({
+  const { data: huntBonuses = [] } = useQuery<any[]>({
     queryKey: [`/api/hunts/${selectedHunt?.id}/bonuses`],
     enabled: !!selectedHunt,
   });
@@ -264,10 +264,10 @@ export default function LiveHuntsPage() {
               <div>
                 <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                   <Calculator className="w-5 h-5" />
-                  Bonuses ({huntBonuses.length})
+                  Bonuses ({(huntBonuses as any[]).length})
                 </h3>
                 
-                {huntBonuses.length === 0 ? (
+                {(huntBonuses as any[]).length === 0 ? (
                   <Card className="bg-gray-800 border-gray-700">
                     <CardContent className="p-8 text-center">
                       <p className="text-gray-400">No bonuses added yet</p>
@@ -287,7 +287,7 @@ export default function LiveHuntsPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {huntBonuses.map((bonus: any) => (
+                        {(huntBonuses as any[]).map((bonus: any) => (
                           <TableRow key={bonus.id} className="border-gray-700">
                             <TableCell className="text-white font-medium">
                               <div className="flex items-center gap-3">
@@ -320,7 +320,7 @@ export default function LiveHuntsPage() {
                               }
                             </TableCell>
                             <TableCell className="text-white">
-                              {bonus.multiplier ? `${bonus.multiplier.toFixed(2)}x` : "-"}
+                              {bonus.multiplier && !isNaN(parseFloat(bonus.multiplier)) ? `${parseFloat(bonus.multiplier).toFixed(2)}x` : "-"}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -331,16 +331,16 @@ export default function LiveHuntsPage() {
               </div>
 
               {/* Progress */}
-              {huntBonuses.length > 0 && (
+              {(huntBonuses as any[]).length > 0 && (
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-gray-400 text-sm">Progress</span>
                     <span className="text-gray-300 text-sm">
-                      {huntBonuses.filter((b: any) => b.isPlayed).length}/{huntBonuses.length} bonuses played
+                      {(huntBonuses as any[]).filter((b: any) => b.isPlayed).length}/{(huntBonuses as any[]).length} bonuses played
                     </span>
                   </div>
                   <Progress 
-                    value={(huntBonuses.filter((b: any) => b.isPlayed).length / huntBonuses.length) * 100} 
+                    value={((huntBonuses as any[]).filter((b: any) => b.isPlayed).length / (huntBonuses as any[]).length) * 100} 
                     className="h-2"
                   />
                 </div>
