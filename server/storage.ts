@@ -177,7 +177,7 @@ export class DatabaseStorage implements IStorage {
     const [activeHuntsResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(hunts)
-      .where(eq(hunts.status, 'collecting'));
+      .where(sql`${hunts.status} != 'completed'`);
 
     const [spentResult] = await db
       .select({ 
