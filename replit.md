@@ -1,45 +1,52 @@
-# Improved BonusHunter App
+# Enhanced BonusHunter App
 
 ## Project Overview
-An enhanced bonus hunting platform for slot machine enthusiasts and streamers with real-time tracking, sharing capabilities, and OBS integration. This is an improved version of bonushunter.app with better UI, performance, and features.
+A comprehensive bonus hunting platform for slot machine enthusiasts and streamers with real-time tracking, admin authentication, gameplay functionality, and OBS integration. Built with modern React + PostgreSQL architecture.
 
 ## Key Features
-- Real-time bonus hunt tracking
-- Multi-currency support (USD, CAD, AUD)
-- OBS overlay integration (simple and advanced v2)
-- Comprehensive slot database (3000+ slots)
-- Admin panel for hunt management
-- Public hunt sharing and viewing
-- Dark theme UI with modern styling
-- Live statistics and progress tracking
+- **Admin Authentication**: Secure API key-based login/logout system with session management
+- **Real-time Hunt Tracking**: Live bonus hunt progress with payout recording
+- **Gameplay Functionality**: "Start Playing" feature with multiplier calculation and win tracking
+- **Multi-currency Support**: USD, CAD, AUD with proper formatting
+- **OBS Overlay Integration**: Protected admin-only overlays for streaming
+- **Comprehensive Slot Database**: 3,376+ slots with images and provider information
+- **Public Hunt Sharing**: Shareable links for hunt viewing
+- **Dark Theme UI**: Modern card-based design with responsive layout
 
 ## Tech Stack
-- Backend: Node.js + Express + better-sqlite3
-- Frontend: Vanilla HTML/CSS/JS
-- Database: SQLite
-- Authentication: API key protected admin routes
+- **Backend**: Node.js + Express + PostgreSQL + Drizzle ORM
+- **Frontend**: React + TypeScript + Tailwind CSS + shadcn/ui
+- **Database**: PostgreSQL with comprehensive schema
+- **Authentication**: JWT-based admin sessions with Bearer token security
 
 ## Project Architecture
 ```
 .
-├── server.js              # Express server with API routes
-├── data/
-│   └── hunts.db           # SQLite database (auto-created)
-└── public/
-    ├── index.html         # Public hunt list/detail view
-    ├── admin.html         # Admin panel (API key gated)
-    ├── overlay.html       # Simple OBS overlay
-    ├── obs-v2.html        # Advanced OBS overlay
-    └── assets/
-        ├── styles.css     # Main stylesheet
-        ├── common.js      # Shared JavaScript utilities
-        └── slots.csv      # Slot database (3000+ entries)
+├── server/
+│   ├── index.ts           # Express server entry point
+│   ├── routes.ts          # API routes with admin protection
+│   ├── auth.ts            # Admin authentication middleware
+│   ├── storage.ts         # Database storage layer
+│   └── db.ts              # PostgreSQL connection
+├── client/src/
+│   ├── components/        # React components
+│   │   ├── admin-login-modal.tsx
+│   │   ├── start-playing-button.tsx
+│   │   └── navigation.tsx
+│   ├── hooks/
+│   │   ├── use-admin.ts   # Admin authentication hook
+│   │   └── use-hunts.ts   # Hunt data hooks
+│   └── pages/             # Application pages
+└── shared/
+    └── schema.ts          # Drizzle database schema
 ```
 
 ## Database Schema
-- **hunts**: Hunt metadata with currency support
-- **bonuses**: Individual bonus entries per hunt
-- **meta**: Key-value store for active hunt tracking
+- **hunts**: Hunt metadata with gameplay state (isPlaying, currentSlotIndex)
+- **bonuses**: Bonus entries with payout tracking (isPlayed, winAmount, multiplier)
+- **slotDatabase**: 3,376+ slots with images and provider data
+- **adminSessions**: Secure session management for admin users
+- **meta**: Key-value store for application state
 
 ## User Preferences
 - Dark theme with modern card-based UI
@@ -47,11 +54,22 @@ An enhanced bonus hunting platform for slot machine enthusiasts and streamers wi
 - Real-time progress tracking
 - OBS integration for streaming
 
+## Admin Features (API Key Protected)
+- **Hunt Management**: Create, edit, and delete bonus hunts
+- **Gameplay Control**: Start playing sessions and record payouts
+- **Payout Recording**: Click bonuses to input win amounts with automatic multiplier calculation
+- **OBS Overlay Access**: Protected streaming overlay URLs
+- **Session Management**: Secure login/logout with 24-hour session expiry
+
 ## Recent Changes
-- Initial project setup with full BonusHunter functionality
-- Multi-currency support implementation
-- Advanced OBS overlay matching original design
-- Comprehensive slot database integration
+- **Database Migration**: Migrated from SQLite to PostgreSQL for enhanced performance (Jan 2025)
+- **Admin Authentication**: Implemented comprehensive JWT-based session system
+- **Gameplay Functionality**: Added "Start Playing" with payout recording and multiplier calculation
+- **Security Enhancement**: All admin routes now require authentication
+- **Slot Database**: Imported 3,376 slots with complete metadata
+- **UI Improvements**: Updated navigation with admin login/logout controls
 
 ## Environment Variables
-- `ADMIN_KEY`: Required for admin panel access
+- `ADMIN_KEY`: Required for admin authentication
+- `DATABASE_URL`: PostgreSQL connection string
+- `SESSION_SECRET`: JWT session signing key

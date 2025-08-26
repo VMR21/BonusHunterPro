@@ -17,6 +17,9 @@ export function useAdmin() {
     enabled: !!sessionToken,
     retry: false,
     queryFn: async () => {
+      if (!sessionToken) {
+        throw new Error('No session token');
+      }
       const response = await fetch('/api/admin/check', {
         headers: {
           'Authorization': `Bearer ${sessionToken}`,
@@ -34,11 +37,20 @@ export function useAdmin() {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (adminKey: string) => {
-      const response = await apiRequest('/api/admin/login', {
+      const response = await fetch('/api/admin/login', {
         method: 'POST',
-        body: { adminKey },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ adminKey }),
       });
-      return response;
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Login failed' }));
+        throw new Error(errorData.error || 'Login failed');
+      }
+      
+      return response.json();
     },
     onSuccess: (data) => {
       const token = data.sessionToken;
