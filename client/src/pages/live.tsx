@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trophy, User, Clock, DollarSign, Copy, ExternalLink } from "lucide-react";
+import { Trophy, User, Clock, DollarSign } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
 
@@ -28,20 +28,18 @@ export default function LiveHuntsPage() {
   
   const { toast } = useToast();
 
-  const copyOBSLink = () => {
-    const obsUrl = `${window.location.origin}/live-bonus-hunt`;
-    navigator.clipboard.writeText(obsUrl).then(() => {
-      toast({
-        title: "OBS Link Copied!",
-        description: "The live bonus hunt URL has been copied to your clipboard",
-      });
-    }).catch(() => {
-      toast({
-        title: "Copy Failed",
-        description: "Please copy the URL manually: " + obsUrl,
-        variant: "destructive",
-      });
-    });
+  const getStatusDisplay = (hunt: LiveHunt) => {
+    if (hunt.isPlaying) {
+      return { label: "PLAYING", color: "bg-green-600", textColor: "text-white" };
+    }
+    switch (hunt.status) {
+      case "collecting":
+        return { label: "COLLECTING", color: "bg-blue-600", textColor: "text-white" };
+      case "completed":
+        return { label: "COMPLETED", color: "bg-gray-600", textColor: "text-white" };
+      default:
+        return { label: hunt.status?.toUpperCase() || "UNKNOWN", color: "bg-gray-600", textColor: "text-white" };
+    }
   };
 
   if (isLoading) {
@@ -69,25 +67,7 @@ export default function LiveHuntsPage() {
               See what everyone is hunting right now
             </p>
           </div>
-          <div className="flex space-x-3">
-            <Button 
-              onClick={copyOBSLink}
-              className="bg-purple-600 hover:bg-purple-700 text-white"
-              data-testid="button-copy-obs-link"
-            >
-              <Copy className="w-4 h-4 mr-2" />
-              Copy OBS Link
-            </Button>
-            <Button 
-              onClick={() => window.open('/live-bonus-hunt', '_blank')}
-              variant="outline"
-              className="border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white"
-              data-testid="button-preview-obs"
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Preview
-            </Button>
-          </div>
+
         </div>
       </div>
 
@@ -109,16 +89,9 @@ export default function LiveHuntsPage() {
                     {hunt.title}
                   </CardTitle>
                   <Badge 
-                    variant={hunt.status === "opening" ? "default" : hunt.status === "finished" ? "secondary" : "outline"}
-                    className={`text-xs ${
-                      hunt.status === "opening" 
-                        ? "bg-green-600 text-white border-green-600" 
-                        : hunt.status === "finished"
-                        ? "bg-gray-600 text-white border-gray-600"
-                        : "bg-yellow-600 text-white border-yellow-600"
-                    }`}
+                    className={`text-xs ${getStatusDisplay(hunt).color} ${getStatusDisplay(hunt).textColor}`}
                   >
-                    {hunt.status === "opening" ? "Opening" : hunt.status === "finished" ? "Finished" : "Collecting"}
+                    {getStatusDisplay(hunt).label}
                   </Badge>
                 </div>
                 <div className="flex items-center space-x-2 text-sm text-gray-400">
@@ -137,7 +110,7 @@ export default function LiveHuntsPage() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-400">Start Balance</span>
                     <span className="text-white font-medium">
-                      {formatCurrency(parseFloat(hunt.startBalance), hunt.currency)}
+                      {formatCurrency(parseFloat(hunt.startBalance), hunt.currency as Currency)}
                     </span>
                   </div>
                   
@@ -145,7 +118,7 @@ export default function LiveHuntsPage() {
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-400">End Balance</span>
                       <span className="text-white font-medium">
-                        {formatCurrency(parseFloat(hunt.endBalance), hunt.currency)}
+                        {formatCurrency(parseFloat(hunt.endBalance), hunt.currency as Currency)}
                       </span>
                     </div>
                   )}

@@ -13,6 +13,7 @@ import OBSLiveBonusesPage from "@/pages/obs-live-bonuses";
 import LatestHuntPage from "@/pages/latest-hunt";
 import PublicHuntPage from "@/pages/public-hunt";
 import LiveHuntsPage from "@/pages/live";
+import LatestHuntOverlay from "@/pages/latest-hunt-overlay";
 
 import AdminKeys from "@/pages/AdminKeys";
 import Profile from "@/pages/Profile";
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/obs-v2" component={OBSOverlayPage} />
       <Route path="/obs-overlay/:id" component={LiveOBSOverlay} />
       <Route path="/live-obs-overlay" component={LiveOBSOverlay} />
+      <Route path="/latest-hunt-overlay" component={LatestHuntOverlay} />
       <Route path="/live-bonus-hunt" component={OBSLiveBonusesPage} />
       <Route path="/latest-hunt" component={LatestHuntPage} />
       <Route path="/public/:token" component={PublicHuntPage} />
@@ -47,6 +49,7 @@ function App() {
         <div className="min-h-screen bg-dark text-gray-100">
           <Switch>
             <Route path="/obs*" component={() => <Router />} />
+            <Route path="/latest-hunt-overlay" component={() => <Router />} />
             <Route path="/live-bonus-hunt" component={() => <Router />} />
             <Route path="/public*" component={() => <Router />} />
             <Route>

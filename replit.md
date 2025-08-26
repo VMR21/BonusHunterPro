@@ -63,6 +63,9 @@ A comprehensive bonus hunting platform for slot machine enthusiasts and streamer
 - **Edit Functionality**: Edit bet amounts and hunt details without restrictions
 
 ## Recent Changes
+- **Live Hunts UI Enhancement**: Removed OBS link and preview buttons from live hunts page as requested, improved status display system with proper color coding for COLLECTING/PLAYING/COMPLETED states (Aug 2025)
+- **New Latest Hunt OBS Overlay**: Created /latest-hunt-overlay route with comprehensive display matching reference image - shows hunt stats (Total Win, Best Win, Best Multi, Bonuses Played), next bonus highlight, and complete slots table with NEXT/WAITING status indicators (Aug 2025)
+- **Authentication System Fully Fixed**: Resolved all remaining apiRequest import issues and authentication problems in hunt-detail.tsx, both payout recording and bet editing now use proper authenticated API calls with comprehensive cache invalidation (Aug 2025)
 - **Multi-Admin Platform Complete**: Successfully implemented hunt isolation where admins see only their hunts in main view, while Live Hunts shows everyone's hunts with admin names (Aug 2025)
 - **Live Hunts Readability**: Enhanced text contrast and admin name display for better readability in live hunt views (Aug 2025)
 - **Database Cleanup**: Cleared all existing bonus hunts to start fresh with proper admin isolation system (Aug 2025)
