@@ -42,7 +42,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     res.json({ 
       isAdmin: sessionCheck.valid,
-      adminDisplayName: sessionCheck.adminDisplayName 
+      adminDisplayName: sessionCheck.adminDisplayName,
+      adminKey: sessionCheck.adminKey
     });
   });
 
@@ -56,10 +57,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ message: "Logged out successfully" });
   });
 
-  // Hunt routes
-  app.get("/api/hunts", async (req, res) => {
+  // Get hunts - for authenticated admin, only their hunts; for public, all public hunts
+  app.get("/api/hunts", optionalAdmin, async (req: AuthenticatedRequest, res) => {
     try {
-      const hunts = await storage.getHuntsWithAdmin();
+      let hunts;
+      if (req.adminKey) {
+        // Authenticated admin sees only their hunts
+        hunts = await storage.getHuntsByAdminKey(req.adminKey);
+      } else {
+        // Public users see all public hunts
+        hunts = await storage.getAllPublicHunts();
+      }
       res.json(hunts);
     } catch (error) {
       console.error('Error fetching hunts:', error);
@@ -67,10 +75,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Live hunts (public view showing all admin hunts)
+  // Live hunts (public view showing all admin hunts with admin names)
   app.get("/api/live-hunts", async (req, res) => {
     try {
-      const liveHunts = await storage.getLiveHunts();
+      const liveHunts = await storage.getAllHuntsWithAdminNames();
       res.json(liveHunts);
     } catch (error) {
       console.error('Error fetching live hunts:', error);
@@ -78,10 +86,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin-specific hunts
+  // Admin-specific hunts (same as /api/hunts for authenticated admins)
   app.get("/api/my-hunts", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
-      const hunts = await storage.getAdminHunts(req.adminKey!);
+      const hunts = await storage.getHuntsByAdminKey(req.adminKey!);
       res.json(hunts);
     } catch (error) {
       console.error('Error fetching admin hunts:', error);

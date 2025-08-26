@@ -38,6 +38,9 @@ export interface IStorage {
 
   // Hunts
   getHunts(): Promise<Hunt[]>;
+  getHuntsByAdminKey(adminKey: string): Promise<Hunt[]>;
+  getAllPublicHunts(): Promise<Hunt[]>;
+  getAllHuntsWithAdminNames(): Promise<(Hunt & { adminDisplayName: string })[]>;
   getHuntsWithAdmin(): Promise<HuntWithAdmin[]>;
   getLiveHunts(): Promise<HuntWithAdmin[]>;
   getAdminHunts(adminKey: string): Promise<Hunt[]>;
@@ -181,6 +184,36 @@ export class DatabaseStorage implements IStorage {
     return result.map(r => ({
       ...r.hunt,
       adminDisplayName: r.adminDisplayName || 'Unknown Admin'
+    }));
+  }
+
+  async getHuntsByAdminKey(adminKey: string): Promise<Hunt[]> {
+    return await db
+      .select()
+      .from(hunts)
+      .where(eq(hunts.adminKey, adminKey))
+      .orderBy(desc(hunts.createdAt));
+  }
+
+  async getAllPublicHunts(): Promise<Hunt[]> {
+    return await db.select().from(hunts)
+      .where(eq(hunts.isPublic, true))
+      .orderBy(desc(hunts.createdAt));
+  }
+
+  async getAllHuntsWithAdminNames(): Promise<(Hunt & { adminDisplayName: string })[]> {
+    const result = await db
+      .select({
+        ...hunts,
+        adminDisplayName: adminKeys.displayName,
+      })
+      .from(hunts)
+      .leftJoin(adminKeys, eq(hunts.adminKey, adminKeys.keyValue))
+      .orderBy(desc(hunts.createdAt));
+    
+    return result.map(row => ({
+      ...row.hunts,
+      adminDisplayName: row.adminDisplayName || 'Unknown Admin',
     }));
   }
 

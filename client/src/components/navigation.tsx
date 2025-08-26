@@ -54,7 +54,7 @@ export function Navigation() {
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-sm text-gray-400">
-              <span>{stats?.totalHunts || 0}</span> Hunts Created
+              <span>{(stats as any)?.totalHunts || 0}</span> Hunts Created
             </div>
             
             {/* Authentication Section */}

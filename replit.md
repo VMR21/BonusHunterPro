@@ -63,9 +63,12 @@ A comprehensive bonus hunting platform for slot machine enthusiasts and streamer
 - **Edit Functionality**: Edit bet amounts and hunt details without restrictions
 
 ## Recent Changes
+- **Multi-Admin Platform Complete**: Successfully implemented hunt isolation where admins see only their hunts in main view, while Live Hunts shows everyone's hunts with admin names (Aug 2025)
+- **Live Hunts Readability**: Enhanced text contrast and admin name display for better readability in live hunt views (Aug 2025)
+- **Database Cleanup**: Cleared all existing bonus hunts to start fresh with proper admin isolation system (Aug 2025)
+- **Admin Key Management Working**: GambiZard admin (GZ-239-2932-92302) can successfully access admin key management functionality (Aug 2025)
 - **Authentication System Fixed**: Resolved database schema issues with admin_sessions table and API request structure (Aug 2025)
 - **Hardcoded Admin Keys Removed**: Cleaned up login modal by removing demo admin keys list as requested (Aug 2025)
-- **GambiZard Admin Access Confirmed**: Successfully tested login with GZ-239-2932-92302 admin key (Aug 2025)
 - **File-based Admin Key Management**: Created admin-keys.txt for easy admin key addition with simple format "DisplayName - KeyValue" (Aug 2025)
 - **Auto-sync System**: Added adminKeyLoader.ts to automatically sync text file keys with database on server startup (Aug 2025)
 - **Multi-admin Platform**: Complete separation of admin logins with isolated hunts while maintaining unified live hunts view (Aug 2025)
