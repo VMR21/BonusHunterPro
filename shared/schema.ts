@@ -70,6 +70,70 @@ export const adminSessions = pgTable("admin_sessions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Raffle system tables
+export const raffles = pgTable("raffles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  adminKey: text("admin_key").notNull(), // Each raffle belongs to an admin key
+  title: text("title").notNull(),
+  description: text("description"),
+  keyword: text("keyword").notNull(), // Chat keyword to trigger entry
+  kickUsername: text("kick_username").notNull(), // Kick.com username for chat monitoring
+  winnerCount: integer("winner_count").notNull().default(1),
+  status: text("status").notNull().default("active"), // active, paused, ended
+  isActive: boolean("is_active").notNull().default(true),
+  chatConnected: boolean("chat_connected").default(false),
+  subscribers: boolean("subscribers_only").default(false),
+  followers: boolean("followers_only").default(false),
+  minWatchTime: integer("min_watch_time").default(0), // in minutes
+  duplicateEntries: boolean("duplicate_entries").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  endedAt: timestamp("ended_at"),
+});
+
+export const raffleEntries = pgTable("raffle_entries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  raffleId: uuid("raffle_id").notNull().references(() => raffles.id, { onDelete: "cascade" }),
+  username: text("username").notNull(),
+  displayName: text("display_name"),
+  message: text("message"), // The chat message that triggered entry
+  isSubscriber: boolean("is_subscriber").default(false),
+  isFollower: boolean("is_follower").default(false),
+  isWinner: boolean("is_winner").default(false),
+  entryNumber: integer("entry_number").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const raffleWinners = pgTable("raffle_winners", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  raffleId: uuid("raffle_id").notNull().references(() => raffles.id, { onDelete: "cascade" }),
+  entryId: uuid("entry_id").notNull().references(() => raffleEntries.id, { onDelete: "cascade" }),
+  username: text("username").notNull(),
+  displayName: text("display_name"),
+  position: integer("position").notNull(), // 1st, 2nd, 3rd place, etc.
+  prizeInfo: text("prize_info"), // Description of what they won
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Raffle schema exports
+export const insertRaffleSchema = createInsertSchema(raffles).omit({
+  id: true,
+  adminKey: true,
+  createdAt: true,
+  updatedAt: true,
+  endedAt: true,
+});
+
+export const insertRaffleEntrySchema = createInsertSchema(raffleEntries).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertRaffleWinnerSchema = createInsertSchema(raffleWinners).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertHuntSchema = createInsertSchema(hunts).omit({
   id: true,
   adminKey: true,
@@ -115,3 +179,16 @@ export type Meta = typeof meta.$inferSelect;
 export type AdminSession = typeof adminSessions.$inferSelect;
 export type PayoutInput = z.infer<typeof payoutSchema>;
 export type AdminLoginInput = z.infer<typeof adminLoginSchema>;
+
+// Raffle types
+export type Raffle = typeof raffles.$inferSelect;
+export type RaffleEntry = typeof raffleEntries.$inferSelect;
+export type RaffleWinner = typeof raffleWinners.$inferSelect;
+export type InsertRaffle = z.infer<typeof insertRaffleSchema>;
+export type InsertRaffleEntry = z.infer<typeof insertRaffleEntrySchema>;
+export type InsertRaffleWinner = z.infer<typeof insertRaffleWinnerSchema>;
+export type RaffleWithStats = Raffle & { 
+  entryCount: number; 
+  winnerCount: number; 
+  adminDisplayName: string; 
+};

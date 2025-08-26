@@ -532,6 +532,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Raffle routes
+  app.get("/api/raffles", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const raffles = await storage.getRafflesWithStats(req.adminKey);
+      res.json(raffles);
+    } catch (error) {
+      console.error("Error fetching raffles:", error);
+      res.status(500).json({ message: "Failed to fetch raffles" });
+    }
+  });
+
+  app.post("/api/raffles", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const raffleData = req.body;
+      const raffle = await storage.createRaffle(raffleData, req.adminKey);
+      res.json(raffle);
+    } catch (error) {
+      console.error("Error creating raffle:", error);
+      res.status(500).json({ message: "Failed to create raffle" });
+    }
+  });
+
+  app.get("/api/raffles/:id", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const raffle = await storage.getRaffle(req.params.id);
+      if (!raffle) {
+        return res.status(404).json({ message: "Raffle not found" });
+      }
+      res.json(raffle);
+    } catch (error) {
+      console.error("Error fetching raffle:", error);
+      res.status(500).json({ message: "Failed to fetch raffle" });
+    }
+  });
+
+  app.put("/api/raffles/:id", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const raffle = await storage.updateRaffle(req.params.id, req.body);
+      if (!raffle) {
+        return res.status(404).json({ message: "Raffle not found" });
+      }
+      res.json(raffle);
+    } catch (error) {
+      console.error("Error updating raffle:", error);
+      res.status(500).json({ message: "Failed to update raffle" });
+    }
+  });
+
+  app.delete("/api/raffles/:id", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const success = await storage.deleteRaffle(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Raffle not found" });
+      }
+      res.json({ message: "Raffle deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting raffle:", error);
+      res.status(500).json({ message: "Failed to delete raffle" });
+    }
+  });
+
+  // Raffle entries routes
+  app.get("/api/raffles/:id/entries", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const entries = await storage.getRaffleEntries(req.params.id);
+      res.json(entries);
+    } catch (error) {
+      console.error("Error fetching raffle entries:", error);
+      res.status(500).json({ message: "Failed to fetch raffle entries" });
+    }
+  });
+
+  app.post("/api/raffles/:id/entries", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const entryCount = await storage.getRaffleEntryCount(req.params.id);
+      const entryData = {
+        ...req.body,
+        raffleId: req.params.id,
+        entryNumber: entryCount + 1,
+      };
+      const entry = await storage.createRaffleEntry(entryData);
+      res.json(entry);
+    } catch (error) {
+      console.error("Error creating raffle entry:", error);
+      res.status(500).json({ message: "Failed to create raffle entry" });
+    }
+  });
+
+  // Draw winners route
+  app.post("/api/raffles/:id/draw-winners", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const raffle = await storage.getRaffle(req.params.id);
+      if (!raffle) {
+        return res.status(404).json({ message: "Raffle not found" });
+      }
+
+      const winners = await storage.drawRaffleWinners(req.params.id, raffle.winnerCount);
+      res.json({ winners });
+    } catch (error) {
+      console.error("Error drawing raffle winners:", error);
+      res.status(500).json({ message: error.message || "Failed to draw winners" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

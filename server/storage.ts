@@ -5,6 +5,9 @@ import {
   meta,
   adminKeys,
   adminSessions,
+  raffles,
+  raffleEntries,
+  raffleWinners,
   type Hunt,
   type InsertHunt,
   type Bonus,
@@ -17,6 +20,13 @@ import {
   type HuntWithBonusCount,
   type HuntWithAdmin,
   type AdminSession,
+  type Raffle,
+  type InsertRaffle,
+  type RaffleEntry,
+  type InsertRaffleEntry,
+  type RaffleWinner,
+  type InsertRaffleWinner,
+  type RaffleWithStats,
 } from "@shared/schema";
 import { eq, desc, asc, sql, ilike } from "drizzle-orm";
 import { db } from "./db";
@@ -70,6 +80,25 @@ export interface IStorage {
   // Meta
   getMeta(key: string): Promise<string | undefined>;
   setMeta(key: string, value: string): Promise<void>;
+
+  // Raffles
+  getRaffles(): Promise<Raffle[]>;
+  getRafflesByAdminKey(adminKey: string): Promise<Raffle[]>;
+  getRafflesWithStats(adminKey: string): Promise<RaffleWithStats[]>;
+  getRaffle(id: string): Promise<Raffle | undefined>;
+  createRaffle(raffle: InsertRaffle, adminKey: string): Promise<Raffle>;
+  updateRaffle(id: string, raffle: Partial<Raffle>): Promise<Raffle | undefined>;
+  deleteRaffle(id: string): Promise<boolean>;
+
+  // Raffle Entries
+  getRaffleEntries(raffleId: string): Promise<RaffleEntry[]>;
+  createRaffleEntry(entry: InsertRaffleEntry): Promise<RaffleEntry>;
+  getRaffleEntryCount(raffleId: string): Promise<number>;
+  
+  // Raffle Winners
+  getRaffleWinners(raffleId: string): Promise<RaffleWinner[]>;
+  createRaffleWinner(winner: InsertRaffleWinner): Promise<RaffleWinner>;
+  drawRaffleWinners(raffleId: string, winnerCount: number): Promise<RaffleWinner[]>;
 
   // Stats
   getStats(): Promise<{
@@ -481,6 +510,174 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(hunts.updatedAt))
       .limit(1);
     return result[0];
+  }
+
+  // Raffle methods
+  async getRaffles(): Promise<Raffle[]> {
+    return await db.select().from(raffles).orderBy(desc(raffles.createdAt));
+  }
+
+  async getRafflesByAdminKey(adminKey: string): Promise<Raffle[]> {
+    return await db.select().from(raffles)
+      .where(eq(raffles.adminKey, adminKey))
+      .orderBy(desc(raffles.createdAt));
+  }
+
+  async getRafflesWithStats(adminKey: string): Promise<RaffleWithStats[]> {
+    const result = await db
+      .select({
+        id: raffles.id,
+        adminKey: raffles.adminKey,
+        title: raffles.title,
+        description: raffles.description,
+        keyword: raffles.keyword,
+        kickUsername: raffles.kickUsername,
+        winnerCount: raffles.winnerCount,
+        status: raffles.status,
+        isActive: raffles.isActive,
+        chatConnected: raffles.chatConnected,
+        subscribers: raffles.subscribers,
+        followers: raffles.followers,
+        minWatchTime: raffles.minWatchTime,
+        duplicateEntries: raffles.duplicateEntries,
+        createdAt: raffles.createdAt,
+        updatedAt: raffles.updatedAt,
+        endedAt: raffles.endedAt,
+        entryCount: sql<number>`COUNT(DISTINCT ${raffleEntries.id})`.as("entryCount"),
+        winnerCount: sql<number>`COUNT(DISTINCT ${raffleWinners.id})`.as("winnerCount"),
+        adminDisplayName: adminKeys.displayName,
+      })
+      .from(raffles)
+      .leftJoin(raffleEntries, eq(raffles.id, raffleEntries.raffleId))
+      .leftJoin(raffleWinners, eq(raffles.id, raffleWinners.raffleId))
+      .leftJoin(adminKeys, eq(raffles.adminKey, adminKeys.keyValue))
+      .where(eq(raffles.adminKey, adminKey))
+      .groupBy(
+        raffles.id,
+        raffles.adminKey,
+        raffles.title,
+        raffles.description,
+        raffles.keyword,
+        raffles.kickUsername,
+        raffles.winnerCount,
+        raffles.status,
+        raffles.isActive,
+        raffles.chatConnected,
+        raffles.subscribers,
+        raffles.followers,
+        raffles.minWatchTime,
+        raffles.duplicateEntries,
+        raffles.createdAt,
+        raffles.updatedAt,
+        raffles.endedAt,
+        adminKeys.displayName
+      )
+      .orderBy(desc(raffles.createdAt));
+
+    return result.map(row => ({
+      ...row,
+      entryCount: Number(row.entryCount || 0),
+      winnerCount: Number(row.winnerCount || 0),
+      adminDisplayName: row.adminDisplayName || "Unknown Admin"
+    }));
+  }
+
+  async getRaffle(id: string): Promise<Raffle | undefined> {
+    const result = await db.select().from(raffles).where(eq(raffles.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createRaffle(raffle: InsertRaffle, adminKey: string): Promise<Raffle> {
+    const result = await db.insert(raffles).values({
+      ...raffle,
+      adminKey,
+    }).returning();
+    return result[0];
+  }
+
+  async updateRaffle(id: string, raffle: Partial<Raffle>): Promise<Raffle | undefined> {
+    const result = await db.update(raffles)
+      .set({ ...raffle, updatedAt: new Date() })
+      .where(eq(raffles.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteRaffle(id: string): Promise<boolean> {
+    const result = await db.delete(raffles).where(eq(raffles.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Raffle Entry methods
+  async getRaffleEntries(raffleId: string): Promise<RaffleEntry[]> {
+    return await db.select().from(raffleEntries)
+      .where(eq(raffleEntries.raffleId, raffleId))
+      .orderBy(asc(raffleEntries.entryNumber));
+  }
+
+  async createRaffleEntry(entry: InsertRaffleEntry): Promise<RaffleEntry> {
+    const result = await db.insert(raffleEntries).values(entry).returning();
+    return result[0];
+  }
+
+  async getRaffleEntryCount(raffleId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(raffleEntries)
+      .where(eq(raffleEntries.raffleId, raffleId));
+    return Number(result[0]?.count || 0);
+  }
+
+  // Raffle Winner methods
+  async getRaffleWinners(raffleId: string): Promise<RaffleWinner[]> {
+    return await db.select().from(raffleWinners)
+      .where(eq(raffleWinners.raffleId, raffleId))
+      .orderBy(asc(raffleWinners.position));
+  }
+
+  async createRaffleWinner(winner: InsertRaffleWinner): Promise<RaffleWinner> {
+    const result = await db.insert(raffleWinners).values(winner).returning();
+    return result[0];
+  }
+
+  async drawRaffleWinners(raffleId: string, winnerCount: number): Promise<RaffleWinner[]> {
+    // Get all entries for this raffle
+    const entries = await this.getRaffleEntries(raffleId);
+    
+    if (entries.length === 0) {
+      throw new Error("No entries found for this raffle");
+    }
+
+    // Randomly select winners
+    const shuffled = [...entries].sort(() => Math.random() - 0.5);
+    const selectedEntries = shuffled.slice(0, Math.min(winnerCount, entries.length));
+    
+    // Create winner records
+    const winners: RaffleWinner[] = [];
+    for (let i = 0; i < selectedEntries.length; i++) {
+      const entry = selectedEntries[i];
+      const winner = await this.createRaffleWinner({
+        raffleId,
+        entryId: entry.id,
+        username: entry.username,
+        displayName: entry.displayName,
+        position: i + 1,
+      });
+      winners.push(winner);
+
+      // Mark the entry as winner
+      await db.update(raffleEntries)
+        .set({ isWinner: true })
+        .where(eq(raffleEntries.id, entry.id));
+    }
+
+    // Update raffle status to ended
+    await this.updateRaffle(raffleId, { 
+      status: "ended", 
+      endedAt: new Date() 
+    });
+
+    return winners;
   }
 }
 

@@ -18,6 +18,7 @@ export function Navigation() {
     { path: "/live", label: "Live Hunts", icon: Users },
     { path: "/slot-picker", label: "Slot Picker", icon: Shuffle },
     { path: "/tournament", label: "Tournament", icon: Crown },
+    { path: "/raffles", label: "Raffles", icon: Dice6 },
     ...(isAuthenticated ? [
       { path: "/latest-hunt-overlay", label: "OBS Overlay", icon: Eye },
       // Only show Admin Keys for GambiZard admin

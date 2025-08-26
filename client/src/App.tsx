@@ -19,6 +19,7 @@ import TournamentPage from "@/pages/tournament";
 
 import AdminKeys from "@/pages/AdminKeys";
 import Profile from "@/pages/Profile";
+import Raffles from "@/pages/raffles";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -28,6 +29,7 @@ function Router() {
       <Route path="/live" component={LiveHuntsPage} />
       <Route path="/slot-picker" component={SlotPickerPage} />
       <Route path="/tournament" component={TournamentPage} />
+      <Route path="/raffles" component={Raffles} />
 
       <Route path="/admin-keys" component={AdminKeys} />
       <Route path="/profile" component={Profile} />
