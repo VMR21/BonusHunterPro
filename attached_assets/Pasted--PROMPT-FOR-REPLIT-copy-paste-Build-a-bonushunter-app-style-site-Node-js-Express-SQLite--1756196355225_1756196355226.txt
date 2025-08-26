@@ -1,0 +1,230 @@
+🚀 PROMPT FOR REPLIT (copy–paste)
+
+Build a bonushunter.app–style site (Node.js + Express + SQLite + OBS overlay).
+
+Stack & Project
+
+Node 18+, Express, better-sqlite3, nanoid, CORS.
+
+Layout:
+
+.
+├─ package.json
+├─ server.js
+├─ data/                # auto: hunts.db
+└─ public/
+   ├─ index.html        # list + detail (like /main/bonushunt)
+   ├─ admin.html        # admin panel (API key gated)
+   ├─ overlay.html      # OBS overlay (simple)
+   ├─ obs-v2.html       # OBS overlay v2 (match /main/streamer/obs/v2)
+   └─ assets/
+      ├─ styles.css
+      ├─ common.js
+      └─ slots.csv      # slot,provider,image
+
+
+Add a Secret: ADMIN_KEY (string). All POST /api/ require header x-api-key: ADMIN_KEY.
+
+Currency support (USD/CAD/AUD)
+
+On Create Hunt (admin.html) show a dropdown: USD ($), CAD (C$), AUD (A$).
+
+Store currencyCode in DB: "USD" | "CAD" | "AUD".
+
+Format numbers with Intl.NumberFormat('en', { style:'currency', currency: currencyCode }).
+
+Show symbol in tables automatically via Intl (no manual $, A$, C$ concatenation).
+
+SQLite schema (create if not exists)
+CREATE TABLE IF NOT EXISTS hunts (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  casino TEXT,
+  currency_code TEXT NOT NULL,                 -- 'USD' | 'CAD' | 'AUD'
+  starting_balance REAL NOT NULL DEFAULT 0,
+  spent REAL NOT NULL DEFAULT 0,
+  notes TEXT,
+  status TEXT NOT NULL CHECK(status IN ('collecting','opening','finished')),
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  order_json TEXT NOT NULL DEFAULT '[]',       -- JSON array of bonus ids
+  current_index INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS bonuses (
+  id TEXT PRIMARY KEY,
+  hunt_id TEXT NOT NULL REFERENCES hunts(id) ON DELETE CASCADE,
+  slot TEXT NOT NULL,
+  provider TEXT,
+  img TEXT,
+  bet REAL NOT NULL DEFAULT 0,
+  collected_at INTEGER NOT NULL,
+  opened_at INTEGER,
+  win REAL,
+  multi REAL
+);
+
+CREATE TABLE IF NOT EXISTS meta (
+  key TEXT PRIMARY KEY,
+  value TEXT
+); -- meta('activeHuntId' -> 'HUNT_ID')
+
+REST API
+
+All bodies are JSON. Admin POSTs must validate x-api-key.
+
+POST /api/createHunt         { title, casino, currencyCode, startingBalance, notes? }
+POST /api/addBonus           { huntId, slot, provider, img, bet }
+POST /api/startOpening       { huntId }
+POST /api/setPayout          { huntId, bonusId, win }  # updates multi=win/bet, auto-advance
+POST /api/updateSpent        { huntId, spent }
+
+GET  /api/hunts
+GET  /api/hunt/:id
+GET  /api/active
+GET  /api/health             -> { ok: true }
+
+Public UI (match bonushunter.app)
+
+/ (index.html)
+
+Table: Name • Casino Name • Bonuses • Start Balance • End Balance • Start Time.
+
+“Active” badge if status !== 'finished'.
+
+End Balance = starting_balance − spent + totalWin.
+
+Clicking a row opens /?id=:huntId.
+
+“Create” button → /admin.html.
+
+/?id=:huntId (hunt detail)
+
+Left card Bonus Info: Name, Casino, Start time, Start Balance, “Link to public view”.
+
+Right card Bonus Stats:
+
+Total Bonus (count)
+
+Avg. Bet (sum(bet)/count)
+
+Avg. Cost (= spent)
+
+Req. X (= spent / sum(bet), 2 decimals)
+
+Total Cost (= spent)
+
+ROI (= ((totalWin − spent)/spent)*100 if spent>0)
+
+Progress bar (current_index / order length when opening)
+
+Provider split donut (plain <canvas>).
+
+Slots table: # • Slot • Provider • Bet • X Win • Win. Order by collectedAt.
+
+Styling: dark theme with rounded “panel” cards; hover rows; subtle borders; typography like screenshots.
+
+Admin UI (/admin.html)
+
+First-load API key field (saved to localStorage.bh_api_key).
+
+Controls:
+
+Create Hunt modal with fields: Title, Casino, Currency (USD/CAD/AUD), Starting Balance.
+
+Add Bonus: Slot (datalist from CSV), Bet, Provider, Image (auto-filled on slot select), thumbnail preview.
+
+Start Opening (lock order by collectedAt, set currentIndex=0).
+
+Set Payout (enter bonusId + win) → saves win, sets multi, auto-advance if it’s current.
+
+Update Spent (number).
+
+Bonus table for the chosen hunt: thumbnail, slot, provider, bet, collected time, opened time, win, x, and show #ID for quick payout entry.
+
+OBS overlays
+
+Simple: /overlay.html?id=:huntId
+
+V2 (match your screenshot): /obs-v2.html?id=:huntId
+
+Header: BONUSHUNT INFO with opened/total progress bar + percentage (right).
+
+Tiles: B.E.X, TARGET, AVG X, TOTAL WIN.
+
+“BEST WIN” + “BEST MULTI” row (derive from bonuses).
+
+Table: # • SLOT • BET • MULTI • WIN (top 16 rows), highlight the current slot row.
+
+Frontend data helpers (assets/common.js)
+
+money(n, code) → new Intl.NumberFormat('en', { style:'currency', currency: code }).format(n)
+
+fmt(n) → number with grouping.
+
+totalWin(hunt) → sum of all bonus.win.
+
+sumBet(hunt) → sum of all bonus.bet.
+
+currentBonus(hunt) → map order[current_index] to bonus object.
+
+Server (server.js)
+
+Express static for /public.
+
+JSON body & CORS.
+
+Ensure folder data/ exists; open data/hunts.db.
+
+Create tables on boot. Implement endpoints. Errors → { error: "..." } + proper status.
+
+Protect POSTs with ADMIN_KEY.
+
+For /api/hunts, return hunts + (optional) bonusesCount and totalWin (or let frontend sum).
+
+For /api/setPayout, after update: if opening & bonusId === order[current_index], increment current_index or mark finished.
+
+CSV (/public/assets/slots.csv)
+slot,provider,image
+Sugar Rush,Pragmatic Play,https://i.imgur.com/BT3mF7y.png
+Wanted Dead or a Wild,Hacksaw Gaming,https://i.imgur.com/7cQm2Hq.png
+Big Bass Bonanza,Pragmatic Play,https://i.imgur.com/2d8Jpfn.png
+Gates of Olympus,Pragmatic Play,https://i.imgur.com/Fy2z2cW.png
+Book of Dead,Play'n GO,https://i.imgur.com/9ZV8i9b.png
+
+Acceptance checklist
+
+Create hunt with USD/CAD/AUD → appears on / with accurate Start Balance symbol and “Active” badge.
+
+Add bonuses via CSV search → provider/image auto-filled; table updates.
+
+Start opening → overlay shows 0/N.
+
+Set first payout → overlay highlights next; multi = win/bet.
+
+Update spent → Req. X & tiles recalc.
+
+Finish all → hunt status becomes finished and badge disappears on list.
+
+OBS V2 page matches look of https://bonushunter.app/main/streamer/obs/v2 (tiles, best win/multi row, table).
+
+🔗 Replit URL patterns (when it’s running)
+
+Replace YOUR-REPL-NAME and YOUR-USER with your values.
+
+Public list:
+https://YOUR-REPL-NAME.YOUR-USER.repl.co/
+
+Hunt detail:
+https://YOUR-REPL-NAME.YOUR-USER.repl.co/?id=HUNT_ID
+
+Admin:
+https://YOUR-REPL-NAME.YOUR-USER.repl.co/admin.html
+
+OBS (simple):
+https://YOUR-REPL-NAME.YOUR-USER.repl.co/overlay.html?id=HUNT_ID
+
+OBS V2 (like your screenshot):
+https://YOUR-REPL-NAME.YOUR-USER.repl.co/obs-v2.html?id=HUNT_ID
+
+If you want, I can also drop the full file contents (server.js + all HTML/CSS/JS) so your dev can paste directly.

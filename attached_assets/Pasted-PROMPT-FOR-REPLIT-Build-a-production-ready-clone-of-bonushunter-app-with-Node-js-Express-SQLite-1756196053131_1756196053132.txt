@@ -1,0 +1,263 @@
+PROMPT FOR REPLIT
+
+Build a production-ready clone of bonushunter.app with Node.js + Express + SQLite and an OBS overlay.
+
+Tech + Project Setup
+
+Stack: Node 18+, Express, better-sqlite3, nanoid, CORS.
+
+Repo layout:
+
+.
+├─ package.json
+├─ server.js
+├─ data/                # auto-created sqlite file hunts.db
+└─ public/
+   ├─ index.html        # public list + hunt detail
+   ├─ admin.html        # admin control panel (API key gate)
+   ├─ overlay.html      # OBS overlay (transparent)
+   └─ assets/
+      ├─ styles.css
+      ├─ common.js
+      └─ slots.csv      # slot,provider,image
+
+
+Add a Replit Secret: ADMIN_KEY (string). All admin POST routes must require x-api-key: <ADMIN_KEY>.
+
+Database (SQLite, better-sqlite3)
+
+Create tables if not exist:
+
+CREATE TABLE IF NOT EXISTS hunts (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  casino TEXT,
+  currency TEXT NOT NULL,
+  starting_balance REAL NOT NULL DEFAULT 0,
+  spent REAL NOT NULL DEFAULT 0,
+  notes TEXT,
+  status TEXT NOT NULL CHECK(status IN ('collecting','opening','finished')),
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  order_json TEXT NOT NULL DEFAULT '[]',
+  current_index INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS bonuses (
+  id TEXT PRIMARY KEY,
+  hunt_id TEXT NOT NULL REFERENCES hunts(id) ON DELETE CASCADE,
+  slot TEXT NOT NULL,
+  provider TEXT,
+  img TEXT,
+  bet REAL NOT NULL DEFAULT 0,
+  collected_at INTEGER NOT NULL,
+  opened_at INTEGER,
+  win REAL,
+  multi REAL
+);
+
+CREATE TABLE IF NOT EXISTS meta (
+  key TEXT PRIMARY KEY,
+  value TEXT
+); -- meta(key='activeHuntId', value='HUNT_ID')
+
+REST API (JSON)
+
+All admin POST endpoints must validate header x-api-key.
+
+POST /api/createHunt
+
+body: { title, casino, currency, startingBalance, notes? }
+
+creates a hunt with status='collecting', order_json='[]', current_index=0, sets meta.activeHuntId
+
+POST /api/addBonus
+
+body: { huntId, slot, provider, img, bet }
+
+creates a bonus with collected_at=now()
+
+POST /api/startOpening
+
+body: { huntId }
+
+sets status='opening', order_json = bonus IDs sorted by collected_at, current_index=0
+
+POST /api/setPayout
+
+body: { huntId, bonusId, win }
+
+updates bonus: win, opened_at=now(), multi = win / bet
+
+if status='opening' and bonusId === order[current_index], then current_index++; if past last → status='finished'
+
+POST /api/updateSpent
+
+body: { huntId, spent }
+
+GET /api/hunts
+
+returns all hunts with a light aggregate (bonuses count, totalWin if cheap; otherwise frontend sums)
+
+GET /api/hunt/:id
+
+returns hunt + all bonuses (object keyed by id is fine, or array)
+
+GET /api/active
+
+reads meta.activeHuntId and returns that hunt
+
+Public UI (match bonushunter.app layout)
+
+/public/index.html
+
+If no ?id:
+
+Show a table with columns: Name, Casino Name, Bonuses, Start Balance, End Balance, Start Time.
+
+“Active” badge for any hunt where status !== 'finished'.
+
+End Balance = starting_balance - spent + totalWin (sum of all win on bonuses).
+
+Clicking a row opens /?id=:huntId.
+
+A “Create” button linking to /admin.html (opens in new tab).
+
+If ?id=:huntId (Hunt Detail):
+
+Bonus Info card: Name, Casino, Start time, Start Balance, Public View URL.
+
+Bonus Stats card with tiles:
+
+Total Bonus (count)
+
+Avg Bet (sum(bet)/count)
+
+Total Cost (spent)
+
+Req. X (break-even X) = spent / sum(bet) (2 decimals)
+
+ROI = ((totalWin - spent) / spent) * 100 if spent>0
+
+Progress bar: current_index / order.length when opening
+
+Provider Split (simple <canvas> pie or donut; don’t add chart libs).
+
+Slots table with columns: #, Slot, Provider, Bet, Multi, Win. Order by collected_at. Show multi as “x” (e.g., 123.4x) or 0x. Win formatted with currency.
+
+/public/assets/common.js
+
+Helpers: fmt(number), totalWin(hunt), toMulti(win,bet), currentBonus(hunt) which maps order[current_index] to the bonus.
+
+/public/assets/styles.css
+
+Dark theme: left sidebar/topbar vibe not strictly required; use clean dark cards (rounded, subtle border).
+
+Match the look-and-feel of bonushunter.app: table rows hover, bold tiles, subtle progress bar.
+
+Admin UI (/public/admin.html)
+
+On first load, if no localStorage.bh_api_key, render an input to save API key.
+
+Controls:
+
+Create Hunt (prompts for title, casino, currency, startingBalance).
+
+Slots CSV search: load /assets/slots.csv (columns: slot,provider,image), build a <datalist>. Selecting a slot fills provider & image and shows preview.
+
+Add Bonus: fields slot (with datalist), bet, provider, image.
+
+Start Opening: calls /api/startOpening.
+
+Set Payout: asks for bonusId (or allow inline selection), win; calls /api/setPayout and auto-advances overlay pointer.
+
+Update Spent: prompts numeric, calls /api/updateSpent.
+
+Below controls, render a table of bonuses for the selected hunt sorted by collected_at, showing: thumbnail, slot, provider, bet, collected time, opened time, win, multi, and show the internal bonusId (for quick copy).
+
+OBS Overlay (/public/overlay.html)
+
+Transparent background.
+
+Poll every 1–1.5s: if ?id present → /api/hunt/:id else /api/active.
+
+Render a header BONUSHUNT INFO with (opened/total) and a progress bar.
+
+Tiles:
+
+B.E. X (spent / sum(bet); 2 decimals)
+
+TARGET (starting_balance with currency)
+
+AVG X (totalWin / sum(bet) if sum(bet)>0; else “x”)
+
+TOTAL WIN (sum of win)
+
+Table (top 10): #, SLOT, BET, MULTI, WIN. Highlight current bonus row (order[current_index]).
+
+Keep fonts legible on stream, avoid huge images; no external chart libs.
+
+Server (server.js)
+
+Express static: app.use(express.static('public'))
+
+JSON body, CORS enabled.
+
+Initialize SQLite at ./data/hunts.db (create folder if missing).
+
+Create tables on boot (see schema above).
+
+Implement endpoints exactly as defined (with input validation).
+
+Utility: now() = Date.now(), num(x, d=0) etc.
+
+Secrets: const ADMIN_KEY = process.env.ADMIN_KEY and validate on each admin POST.
+
+Error handling: return { error: "message" } with proper HTTP status codes.
+
+Add a simple health route GET /api/health returning { ok: true }.
+
+On server errors, frontend pages should show a centered error panel rather than a blank page.
+
+Slots CSV (/public/assets/slots.csv)
+
+Seed with:
+
+slot,provider,image
+Sugar Rush,Pragmatic Play,https://i.imgur.com/BT3mF7y.png
+Wanted Dead or a Wild,Hacksaw Gaming,https://i.imgur.com/7cQm2Hq.png
+Big Bass Bonanza,Pragmatic Play,https://i.imgur.com/2d8Jpfn.png
+Gates of Olympus,Pragmatic Play,https://i.imgur.com/Fy2z2cW.png
+Book of Dead,Play'n GO,https://i.imgur.com/9ZV8i9b.png
+
+UX Parity Notes
+
+End Balance on list = starting_balance − spent + totalWin.
+
+“Active” badge if status !== 'finished'.
+
+Hunt Detail’s stats layout should visually match bonushunter.app: two cards on top (left info, right stats), a progress bar, then slots table + a small provider pie.
+
+Overlay design matches screenshot: header, progress, 4 tiles, compact table with current highlighted.
+
+Acceptance Tests
+
+Create a hunt (title, casino, ₹, start balance) → appears on / with correct Start Time and Active badge.
+
+Add 3 bonuses via slots.csv search → table shows row with correct bet/provider/image.
+
+startOpening → overlay shows 0/3, highlights bonus #1.
+
+setPayout on bonus #1 with win → overlay advances to #2, multi computed = win/bet.
+
+Update spent → Req. X and tiles update; ROI renders on detail page.
+
+Finish all payouts → status becomes finished, Active badge disappears on list.
+
+Deliver everything and run with:
+
+npm install
+
+Add Secret ADMIN_KEY
+
+npm start
