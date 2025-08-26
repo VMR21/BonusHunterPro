@@ -70,146 +70,244 @@ export default function LatestHuntOverlay() {
 
   const bestWinAmount = bestWin ? Number(bestWin.winAmount || 0) : 0;
   const bestMultiplier = bestMulti ? Number(bestMulti.multiplier || 0) : 0;
-
-  // Prepare slots data for scrolling display (4 vertical slots)
-  const slotsPerRow = 4;
-  const slotRows = [];
-  for (let i = 0; i < bonuses?.length; i += slotsPerRow) {
-    slotRows.push(bonuses.slice(i, i + slotsPerRow));
-  }
+  
+  // Calculate progress percentage
+  const progressPercentage = totalBonuses > 0 ? (openedBonuses.length / totalBonuses) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-transparent text-white p-4 overflow-hidden">
-      <div className="max-w-7xl mx-auto space-y-4">
+    <div className="min-h-screen bg-transparent text-white p-8 overflow-hidden">
+      <div className="max-w-6xl mx-auto">
         {/* Hunt Header Stats */}
-        <div className="bg-black/90 backdrop-blur-sm rounded-lg p-4 border border-purple-500/30">
+        <div className="bg-black/80 backdrop-blur-sm rounded-lg p-6 mb-6 border border-purple-500/30">
           <div className="flex justify-between items-center mb-4">
-            <h1 className="text-3xl font-bold text-purple-400">{hunt.title}</h1>
-            <Badge 
-              className={`text-lg px-4 py-2 ${
-                hunt.status === 'collecting' ? 'bg-blue-500' :
-                hunt.status === 'playing' ? 'bg-green-500' : 
-                'bg-gray-500'
-              }`}
-            >
+            <h1 className="text-3xl font-bold text-purple-300">{hunt.title}</h1>
+            <Badge className="bg-purple-600 text-white px-3 py-1">
               {hunt.status?.toUpperCase()}
             </Badge>
           </div>
           
           <div className="grid grid-cols-4 gap-6 text-center">
             <div>
-              <div className="text-2xl font-bold text-green-400">
+              <div className="text-3xl font-bold text-green-400">
                 {formatCurrency(totalWin, hunt.currency as Currency)}
               </div>
-              <div className="text-sm text-gray-300">Total Win</div>
+              <div className="text-sm text-gray-400">Total Win</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-yellow-400">
-                {bestWinAmount > 0 ? formatCurrency(bestWinAmount, hunt.currency as Currency) : '--'}
+              <div className="text-3xl font-bold text-yellow-400">
+                {bestWinAmount > 0 ? formatCurrency(bestWinAmount, hunt.currency as Currency) : formatCurrency(0, hunt.currency as Currency)}
               </div>
-              <div className="text-sm text-gray-300">Best Win</div>
+              <div className="text-sm text-gray-400">Best Win</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-orange-400">
-                {bestMultiplier > 0 ? `${bestMultiplier.toFixed(2)}x` : '--'}
+              <div className="text-3xl font-bold text-orange-400">
+                {bestMultiplier > 0 ? `${bestMultiplier.toFixed(2)}x` : "0.00x"}
               </div>
-              <div className="text-sm text-gray-300">Best Multi</div>
+              <div className="text-sm text-gray-400">Best Multi</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-purple-400">
+              <div className="text-3xl font-bold text-purple-400">
                 {openedBonuses.length}/{totalBonuses}
               </div>
-              <div className="text-sm text-gray-300">Bonuses Played</div>
+              <div className="text-sm text-gray-400">Bonuses Played</div>
+            </div>
+          </div>
+          
+          {/* Progress Bar */}
+          <div className="mt-4">
+            <div className="w-full bg-gray-700 rounded-full h-3">
+              <div 
+                className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-500" 
+                style={{ width: `${progressPercentage}%` }}
+              ></div>
             </div>
           </div>
         </div>
 
         {/* Next Bonus Highlight */}
         {nextBonus && (
-          <div className="bg-gradient-to-r from-yellow-600/20 to-orange-600/20 backdrop-blur-sm rounded-lg p-4 border border-yellow-500/50">
+          <div className="bg-yellow-500/20 backdrop-blur-sm rounded-lg p-4 mb-6 border border-yellow-500/50 animate-pulse">
             <div className="flex items-center gap-4">
-              <div className="text-xl font-bold text-yellow-400">NEXT:</div>
-              <img 
-                src={nextBonus.imageUrl} 
-                alt={nextBonus.slotName}
-                className="w-16 h-20 object-cover rounded-lg"
-              />
+              <div className="text-yellow-400 font-bold text-lg">NEXT:</div>
+              <div className="w-12 h-16 bg-gray-700 rounded overflow-hidden flex-shrink-0">
+                <img 
+                  src={nextBonus.imageUrl} 
+                  alt={nextBonus.slotName}
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <div>
-                <div className="text-lg font-bold text-white">{nextBonus.slotName}</div>
-                <div className="text-sm text-gray-300">{nextBonus.provider}</div>
-                <div className="text-lg text-green-400">
+                <div className="text-white font-semibold">{nextBonus.slotName}</div>
+                <div className="text-gray-400">{nextBonus.provider}</div>
+                <div className="text-green-400">
                   {formatCurrency(Number(nextBonus.betAmount), hunt.currency as Currency)}
                 </div>
-              </div>
-              <div className="ml-auto">
-                <div className="text-3xl font-bold text-yellow-400 animate-pulse">►</div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Scrolling Slots Grid (4 columns) */}
-        <div className="bg-black/90 backdrop-blur-sm rounded-lg p-4 border border-purple-500/30">
-          <h2 className="text-xl font-bold text-purple-400 mb-4">Bonus Hunt Slots</h2>
-          <div className="h-96 overflow-hidden relative">
-            <div 
-              className={`grid grid-cols-4 gap-4 ${slotRows.length > 6 ? 'animate-scroll' : ''}`}
-              style={{
-                animation: slotRows.length > 6 ? 'scroll 30s linear infinite' : 'none'
-              }}
-            >
-              {bonuses?.map((bonus: any, index: number) => (
-                <div
-                  key={bonus.id}
-                  className={`
-                    relative bg-gray-800/50 rounded-lg p-3 border transition-all duration-300 mb-4
-                    ${bonus.isPlayed 
-                      ? 'border-green-500/50 bg-green-900/20' 
-                      : bonus === nextBonus
-                      ? 'border-yellow-500 bg-yellow-900/20 animate-pulse'
-                      : 'border-gray-600/30'
-                    }
-                  `}
-                >
-                  <img 
-                    src={bonus.imageUrl} 
-                    alt={bonus.slotName}
-                    className="w-full h-24 object-cover rounded-lg mb-2"
-                  />
-                  <div className="text-sm font-bold text-white truncate">{bonus.slotName}</div>
-                  <div className="text-xs text-gray-300 truncate">{bonus.provider}</div>
-                  <div className="text-sm text-green-400 font-bold">
-                    {formatCurrency(Number(bonus.betAmount), hunt.currency as Currency)}
-                  </div>
-                  
-                  {bonus.isPlayed && (
-                    <div className="absolute top-2 right-2">
-                      <div className="bg-green-500 text-white text-xs px-2 py-1 rounded font-bold">
-                        {bonus.winAmount > 0 
-                          ? `${Number(bonus.multiplier || 0).toFixed(2)}x`
-                          : '0x'
+        {/* Slots in Hunt Table */}
+        <div className="bg-black/80 backdrop-blur-sm rounded-lg p-6 border border-purple-500/30">
+          <h2 className="text-xl font-bold text-purple-300 mb-4">Slots in Hunt</h2>
+          
+          {/* Table Header */}
+          <div className="grid grid-cols-6 gap-4 mb-4 px-4 py-2 bg-gray-800/50 rounded-lg">
+            <div className="text-center text-gray-300 text-sm font-medium">#</div>
+            <div className="text-left text-gray-300 text-sm font-medium">Slot</div>
+            <div className="text-center text-gray-300 text-sm font-medium">Bet Size</div>
+            <div className="text-center text-gray-300 text-sm font-medium">Multiplier</div>
+            <div className="text-center text-gray-300 text-sm font-medium">Payout</div>
+            <div className="text-center text-gray-300 text-sm font-medium">Status</div>
+          </div>
+
+          {/* Scrolling Slots */}
+          <div className="relative overflow-hidden h-96">
+            <div className="space-y-6 animate-scroll">
+              {bonuses?.map((bonus: any, index: number) => {
+                const isNext = hunt.isPlaying && !bonus.isPlayed && 
+                              bonuses.findIndex((b: any) => !b.isPlayed) === index;
+                
+                return (
+                  <div 
+                    key={`slot-${bonus.id}-${index}`}
+                    className={`
+                      w-full rounded-lg border-2 transition-all
+                      ${isNext 
+                        ? 'bg-yellow-900/30 border-yellow-500 animate-pulse' 
+                        : bonus.isPlayed 
+                        ? 'bg-green-900/30 border-green-500' 
+                        : 'bg-gray-900/30 border-gray-700'
+                      }
+                    `}
+                  >
+                    <div className="grid grid-cols-6 gap-4 items-center p-6 h-24">
+                      <div className={`text-center text-2xl font-bold ${
+                        isNext ? 'text-yellow-400' : bonus.isPlayed ? 'text-green-400' : 'text-gray-400'
+                      }`}>
+                        #{bonus.order}
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <div className="w-14 h-14 bg-gray-700 rounded overflow-hidden flex-shrink-0">
+                          <img 
+                            src={bonus.imageUrl} 
+                            alt={bonus.slotName}
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-white font-medium text-lg truncate">{bonus.slotName}</div>
+                          <div className="text-gray-400 text-sm truncate">{bonus.provider}</div>
+                        </div>
+                      </div>
+                      
+                      <div className="text-center text-green-400 text-xl font-mono">
+                        {formatCurrency(Number(bonus.betAmount), hunt.currency as Currency)}
+                      </div>
+                      
+                      <div className={`text-center text-xl font-bold ${
+                        isNext ? 'text-yellow-400' : 'text-yellow-400'
+                      }`}>
+                        {bonus.isPlayed && bonus.multiplier ? 
+                          `${Number(bonus.multiplier).toFixed(2)}x` : 
+                          '-'
                         }
                       </div>
-                    </div>
-                  )}
-                  
-                  {bonus === nextBonus && (
-                    <div className="absolute top-2 left-2">
-                      <div className="bg-yellow-500 text-black text-xs px-2 py-1 rounded font-bold animate-pulse">
-                        NEXT
+                      
+                      <div className="text-center text-white text-xl font-bold">
+                        {bonus.isPlayed && bonus.winAmount ? 
+                          formatCurrency(Number(bonus.winAmount), hunt.currency as Currency) : 
+                          '-'
+                        }
+                      </div>
+                      
+                      <div className="text-center">
+                        {isNext ? (
+                          <span className="text-yellow-400 text-lg font-medium animate-pulse">NEXT</span>
+                        ) : bonus.isPlayed ? (
+                          <span className="text-green-400 text-lg font-medium">PLAYED</span>
+                        ) : (
+                          <span className="text-gray-500 text-lg">WAITING</span>
+                        )}
                       </div>
                     </div>
-                  )}
-                  
-                  {!bonus.isPlayed && bonus !== nextBonus && (
-                    <div className="absolute top-2 right-2">
-                      <div className="bg-gray-500 text-white text-xs px-2 py-1 rounded">
-                        WAITING
+                  </div>
+                );
+              })}
+              
+              {/* Duplicate entries for seamless scrolling */}
+              {bonuses?.map((bonus: any, index: number) => {
+                const isNext = hunt.isPlaying && !bonus.isPlayed && 
+                              bonuses.findIndex((b: any) => !b.isPlayed) === index;
+                
+                return (
+                  <div 
+                    key={`slot-duplicate-${bonus.id}-${index}`}
+                    className={`
+                      w-full rounded-lg border-2 transition-all
+                      ${isNext 
+                        ? 'bg-yellow-900/30 border-yellow-500 animate-pulse' 
+                        : bonus.isPlayed 
+                        ? 'bg-green-900/30 border-green-500' 
+                        : 'bg-gray-900/30 border-gray-700'
+                      }
+                    `}
+                  >
+                    <div className="grid grid-cols-6 gap-4 items-center p-6 h-24">
+                      <div className={`text-center text-2xl font-bold ${
+                        isNext ? 'text-yellow-400' : bonus.isPlayed ? 'text-green-400' : 'text-gray-400'
+                      }`}>
+                        #{bonus.order}
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <div className="w-14 h-14 bg-gray-700 rounded overflow-hidden flex-shrink-0">
+                          <img 
+                            src={bonus.imageUrl} 
+                            alt={bonus.slotName}
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-white font-medium text-lg truncate">{bonus.slotName}</div>
+                          <div className="text-gray-400 text-sm truncate">{bonus.provider}</div>
+                        </div>
+                      </div>
+                      
+                      <div className="text-center text-green-400 text-xl font-mono">
+                        {formatCurrency(Number(bonus.betAmount), hunt.currency as Currency)}
+                      </div>
+                      
+                      <div className={`text-center text-xl font-bold ${
+                        isNext ? 'text-yellow-400' : 'text-yellow-400'
+                      }`}>
+                        {bonus.isPlayed && bonus.multiplier ? 
+                          `${Number(bonus.multiplier).toFixed(2)}x` : 
+                          '-'
+                        }
+                      </div>
+                      
+                      <div className="text-center text-white text-xl font-bold">
+                        {bonus.isPlayed && bonus.winAmount ? 
+                          formatCurrency(Number(bonus.winAmount), hunt.currency as Currency) : 
+                          '-'
+                        }
+                      </div>
+                      
+                      <div className="text-center">
+                        {isNext ? (
+                          <span className="text-yellow-400 text-lg font-medium animate-pulse">NEXT</span>
+                        ) : bonus.isPlayed ? (
+                          <span className="text-green-400 text-lg font-medium">PLAYED</span>
+                        ) : (
+                          <span className="text-gray-500 text-lg">WAITING</span>
+                        )}
                       </div>
                     </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -218,10 +316,10 @@ export default function LatestHuntOverlay() {
       <style>{`
         @keyframes scroll {
           0% { transform: translateY(0); }
-          100% { transform: translateY(-100%); }
+          100% { transform: translateY(-50%); }
         }
         .animate-scroll {
-          animation: scroll 30s linear infinite;
+          animation: scroll 20s linear infinite;
         }
       `}</style>
     </div>
