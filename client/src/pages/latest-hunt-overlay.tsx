@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import type { Currency } from "@/lib/currency";
-import { apiRequest } from "@/lib/queryClient";
 
 export default function LatestHuntOverlay() {
   const [data, setData] = useState<any>(null);
@@ -10,7 +9,26 @@ export default function LatestHuntOverlay() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const result = await apiRequest('/api/obs-overlay/latest');
+        // Get auth token from localStorage
+        const token = localStorage.getItem('adminSessionToken');
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json',
+        };
+        
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch('/api/obs-overlay/latest', {
+          method: 'GET',
+          headers,
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
         setData(result);
       } catch (error) {
         console.error('Error fetching OBS data:', error);
@@ -53,172 +71,159 @@ export default function LatestHuntOverlay() {
   const bestWinAmount = bestWin ? Number(bestWin.winAmount || 0) : 0;
   const bestMultiplier = bestMulti ? Number(bestMulti.multiplier || 0) : 0;
 
+  // Prepare slots data for scrolling display (4 vertical slots)
+  const slotsPerRow = 4;
+  const slotRows = [];
+  for (let i = 0; i < bonuses?.length; i += slotsPerRow) {
+    slotRows.push(bonuses.slice(i, i + slotsPerRow));
+  }
+
   return (
-    <div className="min-h-screen bg-transparent text-white p-8 overflow-hidden">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen bg-transparent text-white p-4 overflow-hidden">
+      <div className="max-w-7xl mx-auto space-y-4">
         {/* Hunt Header Stats */}
-        <div className="bg-black/90 backdrop-blur-sm rounded-lg p-6 border border-purple-500/30">
+        <div className="bg-black/90 backdrop-blur-sm rounded-lg p-4 border border-purple-500/30">
           <div className="flex justify-between items-center mb-4">
-            <h1 className="text-2xl font-bold text-purple-300">{hunt.title}</h1>
-            <Badge className="bg-purple-600 text-white px-3 py-1">
-              {hunt.isPlaying ? "PLAYING" : "COLLECTING"}
+            <h1 className="text-3xl font-bold text-purple-400">{hunt.title}</h1>
+            <Badge 
+              className={`text-lg px-4 py-2 ${
+                hunt.status === 'collecting' ? 'bg-blue-500' :
+                hunt.status === 'playing' ? 'bg-green-500' : 
+                'bg-gray-500'
+              }`}
+            >
+              {hunt.status?.toUpperCase()}
             </Badge>
           </div>
           
-          <div className="grid grid-cols-4 gap-4">
-            <div className="text-center">
+          <div className="grid grid-cols-4 gap-6 text-center">
+            <div>
               <div className="text-2xl font-bold text-green-400">
                 {formatCurrency(totalWin, hunt.currency as Currency)}
               </div>
-              <div className="text-sm text-gray-400">Total Win</div>
+              <div className="text-sm text-gray-300">Total Win</div>
             </div>
-            
-            <div className="text-center">
+            <div>
               <div className="text-2xl font-bold text-yellow-400">
-                {bestWinAmount > 0 ? formatCurrency(bestWinAmount, hunt.currency as Currency) : "$0.00"}
+                {bestWinAmount > 0 ? formatCurrency(bestWinAmount, hunt.currency as Currency) : '--'}
               </div>
-              <div className="text-sm text-gray-400">Best Win</div>
+              <div className="text-sm text-gray-300">Best Win</div>
             </div>
-            
-            <div className="text-center">
+            <div>
               <div className="text-2xl font-bold text-orange-400">
-                {bestMultiplier > 0 ? `${bestMultiplier.toFixed(1)}x` : "0.0x"}
+                {bestMultiplier > 0 ? `${bestMultiplier.toFixed(2)}x` : '--'}
               </div>
-              <div className="text-sm text-gray-400">Best Multi</div>
+              <div className="text-sm text-gray-300">Best Multi</div>
             </div>
-            
-            <div className="text-center">
+            <div>
               <div className="text-2xl font-bold text-purple-400">
                 {openedBonuses.length}/{totalBonuses}
               </div>
-              <div className="text-sm text-gray-400">Bonuses Played</div>
+              <div className="text-sm text-gray-300">Bonuses Played</div>
             </div>
           </div>
         </div>
 
-        {/* Next Bonus */}
+        {/* Next Bonus Highlight */}
         {nextBonus && (
-          <div className="bg-gradient-to-r from-yellow-900/80 to-yellow-800/80 backdrop-blur-sm rounded-lg p-4 border border-yellow-500/30">
-            <div className="flex items-center space-x-4">
-              <div className="text-sm font-medium text-yellow-200">NEXT:</div>
+          <div className="bg-gradient-to-r from-yellow-600/20 to-orange-600/20 backdrop-blur-sm rounded-lg p-4 border border-yellow-500/50">
+            <div className="flex items-center gap-4">
+              <div className="text-xl font-bold text-yellow-400">NEXT:</div>
               <img 
                 src={nextBonus.imageUrl} 
                 alt={nextBonus.slotName}
-                className="w-12 h-16 object-cover rounded"
-                onError={(e) => {
-                  e.currentTarget.src = '/api/placeholder/150/150';
-                }}
+                className="w-16 h-20 object-cover rounded-lg"
               />
-              <div className="flex-1">
-                <div className="text-lg font-bold text-yellow-100">{nextBonus.slotName}</div>
-                <div className="text-sm text-yellow-200">{nextBonus.provider}</div>
-                <div className="text-sm text-yellow-200">{formatCurrency(parseFloat(nextBonus.betAmount), hunt.currency as Currency)}</div>
+              <div>
+                <div className="text-lg font-bold text-white">{nextBonus.slotName}</div>
+                <div className="text-sm text-gray-300">{nextBonus.provider}</div>
+                <div className="text-lg text-green-400">
+                  {formatCurrency(Number(nextBonus.betAmount), hunt.currency as Currency)}
+                </div>
+              </div>
+              <div className="ml-auto">
+                <div className="text-3xl font-bold text-yellow-400 animate-pulse">►</div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Slots in Hunt Table */}
-        <div className="bg-black/80 backdrop-blur-sm rounded-lg border border-purple-500/30">
-          <div className="p-4 border-b border-purple-500/30">
-            <h3 className="text-lg font-bold text-purple-300">Slots in Hunt</h3>
-          </div>
-          
-          <div className="p-4">
-            <div className="grid grid-cols-7 gap-4 text-sm font-medium text-gray-400 mb-4">
-              <div>#</div>
-              <div>Slot</div>
-              <div>Bet Size</div>
-              <div>Multiplier</div>
-              <div>Payout</div>
-              <div>Status</div>
-            </div>
-
-            <div className="space-y-2">
-              {bonuses?.map((bonus: any, index: number) => {
-                const isNext = hunt.isPlaying && !bonus.isPlayed && 
-                              bonuses.findIndex((b: any) => !b.isPlayed) === index;
-                
-                return (
-                  <div 
-                    key={bonus.id} 
-                    className={`grid grid-cols-7 gap-4 items-center p-3 rounded ${
-                      isNext 
-                        ? 'bg-gradient-to-r from-yellow-900/50 to-yellow-800/50 border border-yellow-500/30' 
-                        : bonus.isPlayed 
-                        ? 'bg-gray-900/50' 
-                        : 'bg-gray-800/30'
-                    }`}
-                  >
-                    <div className={`text-lg font-bold ${
-                      isNext ? 'text-yellow-300' : 'text-gray-300'
-                    }`}>
-                      #{bonus.order}
-                    </div>
-                    
-                    <div className="flex items-center space-x-3">
-                      <img 
-                        src={bonus.imageUrl} 
-                        alt={bonus.slotName}
-                        className="w-10 h-13 object-cover rounded"
-                        onError={(e) => {
-                          e.currentTarget.src = '/api/placeholder/150/150';
-                        }}
-                      />
-                      <div>
-                        <div className={`font-medium ${
-                          isNext ? 'text-yellow-100' : 'text-white'
-                        }`}>
-                          {bonus.slotName}
-                        </div>
-                        <div className={`text-xs ${
-                          isNext ? 'text-yellow-200' : 'text-gray-400'
-                        }`}>
-                          {bonus.provider}
-                        </div>
+        {/* Scrolling Slots Grid (4 columns) */}
+        <div className="bg-black/90 backdrop-blur-sm rounded-lg p-4 border border-purple-500/30">
+          <h2 className="text-xl font-bold text-purple-400 mb-4">Bonus Hunt Slots</h2>
+          <div className="h-96 overflow-hidden relative">
+            <div 
+              className={`grid grid-cols-4 gap-4 ${slotRows.length > 6 ? 'animate-scroll' : ''}`}
+              style={{
+                animation: slotRows.length > 6 ? 'scroll 30s linear infinite' : 'none'
+              }}
+            >
+              {bonuses?.map((bonus: any, index: number) => (
+                <div
+                  key={bonus.id}
+                  className={`
+                    relative bg-gray-800/50 rounded-lg p-3 border transition-all duration-300 mb-4
+                    ${bonus.isPlayed 
+                      ? 'border-green-500/50 bg-green-900/20' 
+                      : bonus === nextBonus
+                      ? 'border-yellow-500 bg-yellow-900/20 animate-pulse'
+                      : 'border-gray-600/30'
+                    }
+                  `}
+                >
+                  <img 
+                    src={bonus.imageUrl} 
+                    alt={bonus.slotName}
+                    className="w-full h-24 object-cover rounded-lg mb-2"
+                  />
+                  <div className="text-sm font-bold text-white truncate">{bonus.slotName}</div>
+                  <div className="text-xs text-gray-300 truncate">{bonus.provider}</div>
+                  <div className="text-sm text-green-400 font-bold">
+                    {formatCurrency(Number(bonus.betAmount), hunt.currency as Currency)}
+                  </div>
+                  
+                  {bonus.isPlayed && (
+                    <div className="absolute top-2 right-2">
+                      <div className="bg-green-500 text-white text-xs px-2 py-1 rounded font-bold">
+                        {bonus.winAmount > 0 
+                          ? `${Number(bonus.multiplier || 0).toFixed(2)}x`
+                          : '0x'
+                        }
                       </div>
                     </div>
-                    
-                    <div className={`${
-                      isNext ? 'text-yellow-100' : 'text-gray-300'
-                    }`}>
-                      {formatCurrency(parseFloat(bonus.betAmount), hunt.currency as Currency)}
+                  )}
+                  
+                  {bonus === nextBonus && (
+                    <div className="absolute top-2 left-2">
+                      <div className="bg-yellow-500 text-black text-xs px-2 py-1 rounded font-bold animate-pulse">
+                        NEXT
+                      </div>
                     </div>
-                    
-                    <div className={`${
-                      isNext ? 'text-yellow-100' : 'text-gray-300'
-                    }`}>
-                      {bonus.isPlayed && bonus.multiplier ? 
-                        `${Number(bonus.multiplier).toFixed(1)}x` : 
-                        '-'
-                      }
+                  )}
+                  
+                  {!bonus.isPlayed && bonus !== nextBonus && (
+                    <div className="absolute top-2 right-2">
+                      <div className="bg-gray-500 text-white text-xs px-2 py-1 rounded">
+                        WAITING
+                      </div>
                     </div>
-                    
-                    <div className={`${
-                      isNext ? 'text-yellow-100' : 'text-gray-300'
-                    }`}>
-                      {bonus.isPlayed && bonus.winAmount ? 
-                        formatCurrency(Number(bonus.winAmount), hunt.currency as Currency) : 
-                        '-'
-                      }
-                    </div>
-                    
-                    <div>
-                      {isNext ? (
-                        <span className="text-yellow-300 font-bold">NEXT</span>
-                      ) : bonus.isPlayed ? (
-                        <span className="text-gray-400">WAITING</span>
-                      ) : (
-                        <span className="text-gray-400">WAITING</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
+      
+      <style>{`
+        @keyframes scroll {
+          0% { transform: translateY(0); }
+          100% { transform: translateY(-100%); }
+        }
+        .animate-scroll {
+          animation: scroll 30s linear infinite;
+        }
+      `}</style>
     </div>
   );
 }
