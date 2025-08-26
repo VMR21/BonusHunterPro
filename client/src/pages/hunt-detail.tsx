@@ -206,7 +206,8 @@ export default function HuntDetailPage() {
   const totalWin = openedBonuses.reduce((sum, b) => sum + (Number(b.winAmount) || 0), 0);
   const avgBet = totalBonuses > 0 ? totalCost / totalBonuses : 0;
   const reqX = totalCost > 0 ? (totalCost * 100) / totalCost : 0;
-  const roi = totalCost > 0 ? ((totalWin - totalCost) / totalCost) * 100 : 0;
+  const startBalance = Number(hunt.startBalance);
+  const roi = startBalance > 0 ? (totalWin / startBalance) * 100 : 0;
 
   const bestWin = openedBonuses.reduce((best, current) => {
     const currentWin = current.winAmount || 0;

@@ -112,11 +112,11 @@ export default function LiveOBSOverlay() {
         {bonuses && bonuses.length > 0 && (
           <div className="bg-black/80 backdrop-blur-sm rounded-lg p-6 border border-purple-500/30">
             <h2 className="text-xl font-bold text-purple-300 mb-4">All Bonuses</h2>
-            <div className="relative overflow-hidden h-96">
-              <div className="animate-scroll space-y-3">
-                {bonuses.concat(bonuses).map((bonus, index) => (
+            <div className="relative overflow-y-auto h-96">
+              <div className="space-y-3">
+                {bonuses.map((bonus, index) => (
                   <div 
-                    key={`${bonus.id}-${index}`}
+                    key={bonus.id}
                     className={`flex items-center gap-4 p-3 rounded-lg transition-all ${
                       bonus.isPlayed 
                         ? 'bg-green-900/20 border border-green-500/30' 

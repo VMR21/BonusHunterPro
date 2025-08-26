@@ -49,3 +49,20 @@ export function useDeleteBonus() {
     },
   });
 }
+
+export function useRecordPayout() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ bonusId, winAmount, huntId }: { bonusId: string; winAmount: number; huntId: string }) => {
+      const response = await apiRequest("POST", `/api/bonuses/${bonusId}/payout`, { winAmount });
+      return response.json();
+    },
+    onSuccess: (_, { huntId }) => {
+      // Invalidate both bonuses and hunt data to ensure real-time updates
+      queryClient.invalidateQueries({ queryKey: ["/api/hunts", huntId, "bonuses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/hunts", huntId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+    },
+  });
+}

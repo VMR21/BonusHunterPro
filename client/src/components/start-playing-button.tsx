@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useRecordPayout } from "@/hooks/use-bonuses";
 
 import { Play, DollarSign, Calculator, Edit } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
@@ -31,6 +32,7 @@ export function StartPlayingButton({ hunt, bonuses }: StartPlayingButtonProps) {
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const recordPayout = useRecordPayout();
 
   // Start playing mutation
   const startPlayingMutation = useMutation({
@@ -104,44 +106,25 @@ export function StartPlayingButton({ hunt, bonuses }: StartPlayingButtonProps) {
     },
   });
 
-  // Payout mutation
-  const payoutMutation = useMutation({
-    mutationFn: async ({ bonusId, winAmount }: { bonusId: string; winAmount: number }) => {
-      const response = await fetch(`/api/bonuses/${bonusId}/payout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ winAmount }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to record payout' }));
-        throw new Error(errorData.message || 'Failed to record payout');
-      }
-      
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/hunts/${hunt.id}/bonuses`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/hunts/${hunt.id}`] });
-      setShowPayoutModal(false);
-      setSelectedBonus(null);
-      setWinAmount("");
-      toast({
-        title: "Payout Recorded",
-        description: "Bonus payout and multiplier have been calculated",
-        variant: "default",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to record payout",
-        variant: "destructive",
-      });
-    },
-  });
+  // Use the custom payout hook for better tracking
+  const handlePayoutSuccess = () => {
+    setShowPayoutModal(false);
+    setSelectedBonus(null);
+    setWinAmount("");
+    toast({
+      title: "Payout Recorded",
+      description: "Bonus payout and multiplier have been calculated",
+      variant: "default",
+    });
+  };
+
+  const handlePayoutError = (error: any) => {
+    toast({
+      title: "Error",
+      description: error.message || "Failed to record payout",
+      variant: "destructive",
+    });
+  };
 
   const handleBonusClick = (bonus: Bonus) => {
     if (hunt.isPlaying && !bonus.isPlayed) {
@@ -172,9 +155,13 @@ export function StartPlayingButton({ hunt, bonuses }: StartPlayingButtonProps) {
     if (selectedBonus && winAmount) {
       const amount = parseFloat(winAmount);
       if (amount >= 0) {
-        payoutMutation.mutate({
+        recordPayout.mutate({
           bonusId: selectedBonus.id,
           winAmount: amount,
+          huntId: hunt.id,
+        }, {
+          onSuccess: handlePayoutSuccess,
+          onError: handlePayoutError,
         });
       }
     }
@@ -276,7 +263,7 @@ export function StartPlayingButton({ hunt, bonuses }: StartPlayingButtonProps) {
                 placeholder="0.00"
                 value={winAmount}
                 onChange={(e) => setWinAmount(e.target.value)}
-                disabled={payoutMutation.isPending}
+                disabled={recordPayout.isPending}
                 data-testid="input-win-amount"
               />
             </div>
@@ -295,17 +282,17 @@ export function StartPlayingButton({ hunt, bonuses }: StartPlayingButtonProps) {
                 type="button"
                 variant="outline"
                 onClick={() => setShowPayoutModal(false)}
-                disabled={payoutMutation.isPending}
+                disabled={recordPayout.isPending}
                 data-testid="button-cancel-payout"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                disabled={!winAmount || payoutMutation.isPending}
+                disabled={!winAmount || recordPayout.isPending}
                 data-testid="button-submit-payout"
               >
-                {payoutMutation.isPending ? "Recording..." : "Record Payout"}
+                {recordPayout.isPending ? "Recording..." : "Record Payout"}
               </Button>
             </div>
           </form>

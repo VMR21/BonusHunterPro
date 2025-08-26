@@ -84,7 +84,7 @@ export default function OBSOverlayPage() {
     );
   }
 
-  const openedBonuses = bonuses.filter(b => b.status === 'opened');
+  const openedBonuses = bonuses.filter(b => b.isPlayed);
   const totalBonuses = bonuses.length;
   const progress = totalBonuses > 0 ? (openedBonuses.length / totalBonuses) * 100 : 0;
   
@@ -206,9 +206,9 @@ export default function OBSOverlayPage() {
                     <TableCell className="text-gray-300 text-sm py-4">{bonus.order}</TableCell>
                     <TableCell className="text-white text-sm font-medium py-4">
                       <div className="flex items-center space-x-3">
-                        {bonus.slotImageUrl && (
+                        {bonus.imageUrl && (
                           <img 
-                            src={bonus.slotImageUrl} 
+                            src={bonus.imageUrl} 
                             alt={bonus.slotName}
                             className="w-10 h-10 rounded object-cover flex-shrink-0"
                           />
@@ -294,9 +294,9 @@ export default function OBSOverlayPage() {
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div className="flex items-center space-x-3">
-                    {bonus.slotImageUrl && (
+                    {bonus.imageUrl && (
                       <img 
-                        src={bonus.slotImageUrl} 
+                        src={bonus.imageUrl} 
                         alt={bonus.slotName}
                         className="w-8 h-8 rounded object-cover flex-shrink-0"
                       />
