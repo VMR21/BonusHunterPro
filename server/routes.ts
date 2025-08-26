@@ -1,26 +1,51 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertHuntSchema, insertBonusSchema } from "@shared/schema";
-import { z } from "zod";
-
-const ADMIN_API_KEY = process.env.ADMIN_KEY || "bonushunter-admin-2024";
-
-function requireApiKey(req: any, res: any, next: any) {
-  const apiKey = req.headers['x-api-key'];
-  if (!apiKey || apiKey !== ADMIN_API_KEY) {
-    return res.status(401).json({ message: "Invalid API key" });
-  }
-  next();
-}
+import { insertHuntSchema, insertBonusSchema, payoutSchema, adminLoginSchema } from "@shared/schema";
+import { requireAdmin, createAdminSession, checkAdminSession, type AuthenticatedRequest } from "./auth";
+import { randomUUID } from 'crypto';
+import fs from 'fs';
+import { parse } from 'csv-parse/sync';
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Admin authentication endpoint
+  app.post("/api/admin/login", async (req, res) => {
+    try {
+      const { adminKey } = adminLoginSchema.parse(req.body);
+      const sessionToken = await createAdminSession(adminKey);
+      
+      if (!sessionToken) {
+        return res.status(401).json({ error: "Invalid admin key" });
+      }
+
+      res.json({ sessionToken, message: "Login successful" });
+    } catch (error) {
+      console.error('Admin login error:', error);
+      res.status(400).json({ error: "Invalid request" });
+    }
+  });
+
+  // Check admin session endpoint
+  app.get("/api/admin/check", async (req, res) => {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ isAdmin: false });
+    }
+
+    const sessionToken = authHeader.substring(7);
+    const isValid = await checkAdminSession(sessionToken);
+    
+    res.json({ isAdmin: isValid });
+  });
+
   // Public routes
   app.get("/api/hunts", async (req, res) => {
     try {
       const hunts = await storage.getHunts();
       res.json(hunts);
     } catch (error) {
+      console.error('Error fetching hunts:', error);
       res.status(500).json({ message: "Failed to fetch hunts" });
     }
   });
@@ -30,6 +55,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stats = await storage.getStats();
       res.json(stats);
     } catch (error) {
+      console.error('Error fetching stats:', error);
       res.status(500).json({ message: "Failed to fetch stats" });
     }
   });
@@ -42,6 +68,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(hunt);
     } catch (error) {
+      console.error('Error fetching hunt:', error);
       res.status(500).json({ message: "Failed to fetch hunt" });
     }
   });
@@ -51,6 +78,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const bonuses = await storage.getBonusesByHuntId(req.params.id);
       res.json(bonuses);
     } catch (error) {
+      console.error('Error fetching bonuses:', error);
       res.status(500).json({ message: "Failed to fetch bonuses" });
     }
   });
@@ -65,6 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const bonuses = await storage.getBonusesByHuntId(hunt.id);
       res.json({ hunt, bonuses });
     } catch (error) {
+      console.error('Error fetching public hunt:', error);
       res.status(500).json({ message: "Failed to fetch public hunt" });
     }
   });
@@ -75,59 +104,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!query || query.length < 2) {
         return res.json([]);
       }
-      
       const slots = await storage.searchSlots(query);
       res.json(slots);
     } catch (error) {
+      console.error('Error searching slots:', error);
       res.status(500).json({ message: "Failed to search slots" });
     }
   });
 
-  app.get("/api/slots/:name", async (req, res) => {
+  app.get("/api/latest-hunt", async (req, res) => {
     try {
-      const slot = await storage.getSlot(req.params.name);
-      if (!slot) {
-        return res.status(404).json({ message: "Slot not found" });
+      const hunt = await storage.getLatestHunt();
+      if (!hunt) {
+        return res.status(404).json({ error: "No hunts found" });
       }
-      res.json(slot);
+      res.json({ hunt });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch slot" });
+      console.error('Error fetching latest hunt:', error);
+      res.status(500).json({ error: "Failed to fetch latest hunt" });
     }
   });
 
-  app.get("/api/stats", async (req, res) => {
+  app.get("/api/latest-hunt/public-link", async (req, res) => {
     try {
-      const hunts = await storage.getHunts();
-      const activeHunts = hunts.filter(h => h.status !== 'finished');
-      const totalSpent = hunts.reduce((sum, h) => sum + (h.startBalance || 0), 0);
-      const totalWon = hunts.reduce((sum, h) => sum + (h.endBalance || 0), 0);
-      
-      res.json({
-        totalHunts: hunts.length,
-        activeHunts: activeHunts.length,
-        totalSpent,
-        totalWon,
+      const hunt = await storage.getLatestHunt();
+      if (!hunt) {
+        return res.status(404).json({ error: "No hunts found" });
+      }
+
+      // Generate public token if not exists
+      if (!hunt.publicToken) {
+        const publicToken = randomUUID();
+        await storage.updateHunt(hunt.id, { 
+          publicToken, 
+          isPublic: true 
+        });
+        hunt.publicToken = publicToken;
+      }
+
+      res.json({ 
+        huntId: hunt.id,
+        publicToken: hunt.publicToken,
+        publicUrl: `${req.protocol}://${req.get('host')}/public-hunt/${hunt.publicToken}`,
+        obsUrl: `${req.protocol}://${req.get('host')}/obs-overlay/latest`
       });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch stats" });
+      console.error('Error getting public link:', error);
+      res.status(500).json({ error: "Failed to get public link" });
     }
   });
 
-  // Admin routes (require API key)
-  app.post("/api/admin/hunts", requireApiKey, async (req, res) => {
+  // Protected admin routes
+  app.post("/api/admin/hunts", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const huntData = insertHuntSchema.parse(req.body);
       const hunt = await storage.createHunt(huntData);
       res.status(201).json(hunt);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid hunt data", errors: error.errors });
-      }
-      res.status(500).json({ message: "Failed to create hunt" });
+      console.error('Error creating hunt:', error);
+      res.status(400).json({ message: "Invalid hunt data", error: error.message });
     }
   });
 
-  app.put("/api/admin/hunts/:id", requireApiKey, async (req, res) => {
+  app.put("/api/admin/hunts/:id", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const hunt = await storage.updateHunt(req.params.id, req.body);
       if (!hunt) {
@@ -135,36 +174,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(hunt);
     } catch (error) {
+      console.error('Error updating hunt:', error);
       res.status(500).json({ message: "Failed to update hunt" });
     }
   });
 
-  app.delete("/api/admin/hunts/:id", requireApiKey, async (req, res) => {
+  app.delete("/api/admin/hunts/:id", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const success = await storage.deleteHunt(req.params.id);
       if (!success) {
         return res.status(404).json({ message: "Hunt not found" });
       }
-      res.status(204).send();
+      res.json({ message: "Hunt deleted successfully" });
     } catch (error) {
+      console.error('Error deleting hunt:', error);
       res.status(500).json({ message: "Failed to delete hunt" });
     }
   });
 
-  app.post("/api/admin/bonuses", requireApiKey, async (req, res) => {
+  app.post("/api/admin/bonuses", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const bonusData = insertBonusSchema.parse(req.body);
       const bonus = await storage.createBonus(bonusData);
       res.status(201).json(bonus);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid bonus data", errors: error.errors });
-      }
-      res.status(500).json({ message: "Failed to create bonus" });
+      console.error('Error creating bonus:', error);
+      res.status(400).json({ message: "Invalid bonus data", error: error.message });
     }
   });
 
-  app.put("/api/admin/bonuses/:id", requireApiKey, async (req, res) => {
+  app.put("/api/admin/bonuses/:id", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const bonus = await storage.updateBonus(req.params.id, req.body);
       if (!bonus) {
@@ -172,83 +211,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(bonus);
     } catch (error) {
+      console.error('Error updating bonus:', error);
       res.status(500).json({ message: "Failed to update bonus" });
     }
   });
 
-  app.delete("/api/admin/bonuses/:id", requireApiKey, async (req, res) => {
+  app.delete("/api/admin/bonuses/:id", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const success = await storage.deleteBonus(req.params.id);
       if (!success) {
         return res.status(404).json({ message: "Bonus not found" });
       }
-      res.status(204).send();
+      res.json({ message: "Bonus deleted successfully" });
     } catch (error) {
+      console.error('Error deleting bonus:', error);
       res.status(500).json({ message: "Failed to delete bonus" });
     }
   });
 
-  app.put("/api/admin/hunts/:id/public", requireApiKey, async (req, res) => {
+  // Start playing functionality (admin only)
+  app.post("/api/admin/hunts/:id/start-playing", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
-      const { isPublic } = req.body;
-      const hunt = await storage.updateHunt(req.params.id, { isPublic: isPublic ? 1 : 0 });
+      const hunt = await storage.updateHunt(req.params.id, { 
+        isPlaying: true,
+        currentSlotIndex: 0 
+      });
       if (!hunt) {
         return res.status(404).json({ message: "Hunt not found" });
       }
       res.json(hunt);
     } catch (error) {
-      res.status(500).json({ message: "Failed to update hunt visibility" });
+      console.error('Error starting hunt:', error);
+      res.status(500).json({ message: "Failed to start hunt" });
     }
   });
 
-  app.post("/api/admin/validate-key", (req, res) => {
-    const { apiKey } = req.body;
-    if (apiKey === ADMIN_API_KEY) {
-      res.json({ valid: true });
-    } else {
-      res.status(401).json({ valid: false });
-    }
-  });
-
-  // Get latest hunt for OBS overlay - auto-refreshing
-  app.get('/api/latest-hunt', async (req, res) => {
+  // Payout endpoint (admin only)
+  app.post("/api/admin/bonuses/:id/payout", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
-      const latestHunt = await storage.getLatestHunt();
-      const bonuses = latestHunt ? await storage.getBonusesByHuntId(latestHunt.id) : [];
+      const { winAmount } = payoutSchema.parse(req.body);
+      const bonus = await storage.getBonus(req.params.id);
       
-      // Set cache headers for real-time updates
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      
-      res.json({ hunt: latestHunt, bonuses });
+      if (!bonus) {
+        return res.status(404).json({ message: "Bonus not found" });
+      }
+
+      // Calculate multiplier
+      const betAmount = Number(bonus.betAmount);
+      const multiplier = betAmount > 0 ? winAmount / betAmount : 0;
+
+      const updatedBonus = await storage.updateBonus(req.params.id, {
+        winAmount: winAmount.toString(),
+        multiplier: multiplier.toString(),
+        isPlayed: true
+      });
+
+      // Update hunt totals
+      const hunt = await storage.getHunt(bonus.huntId);
+      if (hunt) {
+        const allBonuses = await storage.getBonusesByHuntId(bonus.huntId);
+        const totalWon = allBonuses.reduce((sum, b) => sum + (Number(b.winAmount) || 0), 0);
+        
+        await storage.updateHunt(bonus.huntId, {
+          totalWon: totalWon.toString()
+        });
+      }
+
+      res.json(updatedBonus);
     } catch (error) {
-      console.error('Error fetching latest hunt:', error);
-      res.status(500).json({ error: 'Failed to fetch latest hunt' });
+      console.error('Error processing payout:', error);
+      res.status(400).json({ message: "Invalid payout data", error: error.message });
     }
   });
 
-  // Get live public link for latest hunt
-  app.get('/api/latest-hunt/public-link', async (req, res) => {
+  // Protected OBS overlay routes (admin only)
+  app.get("/api/admin/obs-overlay/:huntId", requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
-      const latestHunt = await storage.getLatestHunt();
-      if (!latestHunt) {
-        return res.status(404).json({ error: 'No hunt found' });
+      const hunt = await storage.getHunt(req.params.huntId);
+      if (!hunt) {
+        return res.status(404).json({ message: "Hunt not found" });
       }
       
-      const publicLink = `${req.protocol}://${req.get('host')}/public/${latestHunt.publicToken}`;
-      const obsOverlayLink = `${req.protocol}://${req.get('host')}/obs-overlay/${latestHunt.id}`;
+      const bonuses = await storage.getBonusesByHuntId(hunt.id);
+      res.json({ hunt, bonuses });
+    } catch (error) {
+      console.error('Error fetching OBS overlay data:', error);
+      res.status(500).json({ message: "Failed to fetch overlay data" });
+    }
+  });
+
+  // Initialize slot database if empty
+  app.post("/api/admin/init-slots", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      const existingSlots = await storage.getSlots();
+      if (existingSlots.length > 0) {
+        return res.json({ message: "Slots already initialized", count: existingSlots.length });
+      }
+
+      // Read and parse the CSV file
+      const csvData = fs.readFileSync('attached_assets/slots_1756197328567.csv', 'utf8');
+      const slots = parse(csvData, { 
+        columns: true, 
+        skip_empty_lines: true 
+      });
+
+      const slotData = slots.map(slot => ({
+        name: slot.name || slot.Name || '',
+        provider: slot.provider || slot.Provider || '',
+        imageUrl: slot.image_url || slot.imageUrl || slot['Image URL'] || null,
+        category: slot.category || slot.Category || null,
+      })).filter(slot => slot.name && slot.provider);
+
+      await storage.bulkCreateSlots(slotData);
       
       res.json({ 
-        huntId: latestHunt.id,
-        publicLink,
-        obsOverlayLink,
-        title: latestHunt.title,
-        status: latestHunt.status
+        message: "Slots initialized successfully", 
+        count: slotData.length 
       });
     } catch (error) {
-      console.error('Error getting public link:', error);
-      res.status(500).json({ error: 'Failed to get public link' });
+      console.error('Error initializing slots:', error);
+      res.status(500).json({ message: "Failed to initialize slots" });
     }
   });
 

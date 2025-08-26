@@ -1,16 +1,25 @@
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Dice6, Trophy, Settings, Eye } from "lucide-react";
+import { Dice6, Trophy, Settings, Eye, Key, LogOut } from "lucide-react";
 import { useStats } from "@/hooks/use-hunts";
+import { useAdmin } from "@/hooks/use-admin";
+import { AdminLoginModal } from "@/components/admin-login-modal";
+import { Button } from "@/components/ui/button";
 
 export function Navigation() {
   const [location] = useLocation();
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const { data: stats } = useStats();
+  const { isAdmin, logout } = useAdmin();
 
+  // Only show admin-only routes to authenticated admins
   const navItems = [
     { path: "/", label: "Hunts", icon: Trophy },
     { path: "/latest-hunt", label: "Live Hunt", icon: Eye },
-    { path: "/admin", label: "Admin", icon: Settings },
-    { path: "/obs", label: "OBS Overlay", icon: Eye },
+    ...(isAdmin ? [
+      { path: "/admin", label: "Admin", icon: Settings },
+      { path: "/obs", label: "OBS Overlay", icon: Eye },
+    ] : []),
   ];
 
   return (
@@ -43,18 +52,49 @@ export function Navigation() {
             <div className="text-sm text-gray-400">
               <span>{stats?.totalHunts || 0}</span> Hunts Created
             </div>
-            <Link href="/admin">
-              <button 
-                className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition-colors"
-                data-testid="button-new-hunt"
+            
+            {isAdmin ? (
+              <>
+                <Link href="/admin">
+                  <button 
+                    className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition-colors"
+                    data-testid="button-new-hunt"
+                  >
+                    <Trophy className="w-4 h-4 mr-2 inline" />
+                    New Hunt
+                  </button>
+                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={logout}
+                  className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                  data-testid="button-logout"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowLoginModal(true)}
+                className="text-primary hover:text-primary/90 border-primary/20 hover:border-primary/30"
+                data-testid="button-admin-login"
               >
-                <Trophy className="w-4 h-4 mr-2 inline" />
-                New Hunt
-              </button>
-            </Link>
+                <Key className="w-4 h-4 mr-2" />
+                Admin Login
+              </Button>
+            )}
           </div>
         </div>
       </div>
+      
+      <AdminLoginModal 
+        open={showLoginModal} 
+        onOpenChange={setShowLoginModal} 
+      />
     </header>
   );
 }

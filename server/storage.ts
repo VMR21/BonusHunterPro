@@ -1,65 +1,7 @@
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import { hunts, bonuses, slotDatabase, meta } from "@shared/schema";
-import type { Hunt, InsertHunt, Bonus, InsertBonus, Slot, InsertSlot, Meta } from "@shared/schema";
+import { hunts, bonuses, slotDatabase, meta, adminSessions } from "@shared/schema";
+import type { Hunt, InsertHunt, Bonus, InsertBonus, Slot, InsertSlot, Meta, AdminSession } from "@shared/schema";
 import { eq, desc, asc, sql } from "drizzle-orm";
-import { randomUUID } from "crypto";
-import fs from "fs";
-import path from "path";
-
-const sqlite = new Database("data/hunts.db");
-sqlite.exec("PRAGMA foreign_keys = ON");
-
-const db = drizzle(sqlite);
-
-// Create tables
-sqlite.exec(`
-  CREATE TABLE IF NOT EXISTS hunts (
-    id TEXT PRIMARY KEY DEFAULT (hex(randomblob(16))),
-    title TEXT NOT NULL,
-    casino TEXT NOT NULL,
-    currency TEXT NOT NULL DEFAULT 'USD',
-    start_balance REAL NOT NULL,
-    end_balance REAL,
-    status TEXT NOT NULL DEFAULT 'collecting',
-    notes TEXT,
-    created_at INTEGER NOT NULL DEFAULT (unixepoch()),
-    updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
-    is_public INTEGER NOT NULL DEFAULT 0,
-    public_token TEXT
-  );
-
-  CREATE TABLE IF NOT EXISTS bonuses (
-    id TEXT PRIMARY KEY DEFAULT (hex(randomblob(16))),
-    hunt_id TEXT NOT NULL REFERENCES hunts(id) ON DELETE CASCADE,
-    slot_name TEXT NOT NULL,
-    provider TEXT NOT NULL,
-    image_url TEXT,
-    bet_amount REAL NOT NULL,
-    multiplier REAL,
-    win_amount REAL,
-    "order" INTEGER NOT NULL,
-    status TEXT NOT NULL DEFAULT 'waiting',
-    created_at INTEGER NOT NULL DEFAULT (unixepoch())
-  );
-
-  CREATE TABLE IF NOT EXISTS slot_database (
-    id TEXT PRIMARY KEY DEFAULT (hex(randomblob(16))),
-    name TEXT NOT NULL,
-    provider TEXT NOT NULL,
-    image_url TEXT,
-    category TEXT
-  );
-
-  CREATE TABLE IF NOT EXISTS meta (
-    key TEXT PRIMARY KEY,
-    value TEXT
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_bonuses_hunt_id ON bonuses(hunt_id);
-  CREATE INDEX IF NOT EXISTS idx_bonuses_order ON bonuses("order");
-  CREATE INDEX IF NOT EXISTS idx_slot_database_name ON slot_database(name);
-`);
+import { db } from "./db";
 
 export interface IStorage {
   // Hunts
@@ -77,21 +19,33 @@ export interface IStorage {
   updateBonus(id: string, bonus: Partial<Bonus>): Promise<Bonus | undefined>;
   deleteBonus(id: string): Promise<boolean>;
 
-  // Slot Database
+  // Slots
+  getSlots(): Promise<Slot[]>;
   searchSlots(query: string): Promise<Slot[]>;
-  getSlot(name: string): Promise<Slot | undefined>;
+  getSlot(id: string): Promise<Slot | undefined>;
+  getSlotByName(name: string): Promise<Slot | undefined>;
   createSlot(slot: InsertSlot): Promise<Slot>;
-  initializeSlotDatabase(csvData: string): Promise<void>;
+  bulkCreateSlots(slots: InsertSlot[]): Promise<void>;
 
   // Meta
   getMeta(key: string): Promise<string | undefined>;
   setMeta(key: string, value: string): Promise<void>;
+
+  // Stats
+  getStats(): Promise<{
+    totalHunts: number;
+    activeHunts: number;
+    totalSpent: number;
+    totalWon: number;
+  }>;
+
+  // Latest hunt
+  getLatestHunt(): Promise<Hunt | undefined>;
 }
 
-export class SQLiteStorage implements IStorage {
-  // Hunts
+export class DatabaseStorage implements IStorage {
   async getHunts(): Promise<Hunt[]> {
-    return db.select().from(hunts).orderBy(desc(hunts.createdAt));
+    return await db.select().from(hunts).orderBy(desc(hunts.createdAt));
   }
 
   async getHunt(id: string): Promise<Hunt | undefined> {
@@ -105,39 +59,30 @@ export class SQLiteStorage implements IStorage {
   }
 
   async createHunt(hunt: InsertHunt): Promise<Hunt> {
-    const id = randomUUID();
-    const publicToken = randomUUID();
-    const now = Math.floor(Date.now() / 1000);
-    
-    const newHunt = {
-      id,
-      ...hunt,
-      publicToken,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await db.insert(hunts).values(newHunt);
-    return newHunt as Hunt;
+    const result = await db.insert(hunts).values(hunt).returning();
+    return result[0];
   }
 
   async updateHunt(id: string, hunt: Partial<Hunt>): Promise<Hunt | undefined> {
-    const now = Math.floor(Date.now() / 1000);
-    await db.update(hunts)
-      .set({ ...hunt, updatedAt: now })
-      .where(eq(hunts.id, id));
-    
-    return this.getHunt(id);
+    const result = await db
+      .update(hunts)
+      .set({ ...hunt, updatedAt: new Date() })
+      .where(eq(hunts.id, id))
+      .returning();
+    return result[0];
   }
 
   async deleteHunt(id: string): Promise<boolean> {
     const result = await db.delete(hunts).where(eq(hunts.id, id));
-    return result.changes > 0;
+    return result.rowCount > 0;
   }
 
-  // Bonuses
   async getBonusesByHuntId(huntId: string): Promise<Bonus[]> {
-    return db.select().from(bonuses).where(eq(bonuses.huntId, huntId)).orderBy(asc(bonuses.order));
+    return await db
+      .select()
+      .from(bonuses)
+      .where(eq(bonuses.huntId, huntId))
+      .orderBy(asc(bonuses.order));
   }
 
   async getBonus(id: string): Promise<Bonus | undefined> {
@@ -146,97 +91,76 @@ export class SQLiteStorage implements IStorage {
   }
 
   async createBonus(bonus: InsertBonus): Promise<Bonus> {
-    const id = randomUUID();
-    const now = Math.floor(Date.now() / 1000);
-    
-    const newBonus = {
-      id,
-      ...bonus,
-      createdAt: now,
-    };
-
-    await db.insert(bonuses).values(newBonus);
-    return newBonus as Bonus;
+    const result = await db.insert(bonuses).values(bonus).returning();
+    return result[0];
   }
 
   async updateBonus(id: string, bonus: Partial<Bonus>): Promise<Bonus | undefined> {
-    await db.update(bonuses)
+    const result = await db
+      .update(bonuses)
       .set(bonus)
-      .where(eq(bonuses.id, id));
-    
-    return this.getBonus(id);
+      .where(eq(bonuses.id, id))
+      .returning();
+    return result[0];
   }
 
   async deleteBonus(id: string): Promise<boolean> {
     const result = await db.delete(bonuses).where(eq(bonuses.id, id));
-    return result.changes > 0;
+    return result.rowCount > 0;
   }
 
-  // Slot Database
+  async getSlots(): Promise<Slot[]> {
+    return await db.select().from(slotDatabase).orderBy(asc(slotDatabase.name));
+  }
+
   async searchSlots(query: string): Promise<Slot[]> {
-    const result = await db.select()
+    return await db
+      .select()
       .from(slotDatabase)
-      .where(sql`name LIKE '%' || ${query} || '%'`)
-      .limit(20);
-    return result;
+      .where(sql`LOWER(${slotDatabase.name}) LIKE LOWER(${'%' + query + '%'})`)
+      .orderBy(asc(slotDatabase.name))
+      .limit(50);
   }
 
-  async getSlot(name: string): Promise<Slot | undefined> {
+  async getSlot(id: string): Promise<Slot | undefined> {
+    const result = await db.select().from(slotDatabase).where(eq(slotDatabase.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getSlotByName(name: string): Promise<Slot | undefined> {
     const result = await db.select().from(slotDatabase).where(eq(slotDatabase.name, name)).limit(1);
     return result[0];
   }
 
   async createSlot(slot: InsertSlot): Promise<Slot> {
-    const id = randomUUID();
-    const newSlot = { id, ...slot };
-    await db.insert(slotDatabase).values(newSlot);
-    return newSlot as Slot;
+    const result = await db.insert(slotDatabase).values(slot).returning();
+    return result[0];
   }
 
-  async initializeSlotDatabase(csvData: string): Promise<void> {
-    const lines = csvData.split('\n');
-    const headers = lines[0].split(',');
+  async bulkCreateSlots(slots: InsertSlot[]): Promise<void> {
+    if (slots.length === 0) return;
     
-    for (let i = 1; i < lines.length; i++) {
-      const row = lines[i].split(',');
-      if (row.length >= 3) {
-        const slot = {
-          name: row[0]?.trim(),
-          provider: row[1]?.trim(),
-          imageUrl: row[2]?.trim(),
-          category: row[3]?.trim() || null,
-        };
-        
-        if (slot.name && slot.provider) {
-          try {
-            await this.createSlot(slot);
-          } catch (error) {
-            // Skip duplicates or other errors
-            console.log(`Skipped slot: ${slot.name} - ${error instanceof Error ? error.message : 'Unknown error'}`);
-          }
-        }
-      }
+    // Use batch insert for better performance
+    const batchSize = 100;
+    for (let i = 0; i < slots.length; i += batchSize) {
+      const batch = slots.slice(i, i + batchSize);
+      await db.insert(slotDatabase).values(batch);
     }
   }
 
-  // Meta
   async getMeta(key: string): Promise<string | undefined> {
     const result = await db.select().from(meta).where(eq(meta.key, key)).limit(1);
-    return result[0]?.value ?? undefined;
+    return result[0]?.value;
   }
 
   async setMeta(key: string, value: string): Promise<void> {
-    await db.insert(meta)
+    await db
+      .insert(meta)
       .values({ key, value })
       .onConflictDoUpdate({
         target: meta.key,
-        set: { value },
+        set: { value }
       });
-  }
-
-  async getLatestHunt(): Promise<Hunt | null> {
-    const result = await db.select().from(hunts).orderBy(desc(hunts.createdAt)).limit(1);
-    return result[0] || null;
   }
 
   async getStats(): Promise<{
@@ -244,46 +168,45 @@ export class SQLiteStorage implements IStorage {
     activeHunts: number;
     totalSpent: number;
     totalWon: number;
-    avgWinRate: number;
   }> {
-    const totalHuntsResult = await db.select().from(hunts);
-    const activeHuntsResult = await db.select().from(hunts).where(sql`status != 'finished'`);
-    const totalSpentResult = await db.select().from(hunts).where(sql`end_balance IS NOT NULL`);
-    const totalWonResult = await db.select().from(bonuses).where(sql`win_amount IS NOT NULL`);
-    
-    const totalSpent = totalSpentResult.reduce((sum, hunt) => {
-      const spent = hunt.startBalance - (hunt.endBalance || hunt.startBalance);
-      return sum + (spent > 0 ? spent : 0);
-    }, 0);
-    
-    const totalWon = totalWonResult.reduce((sum, bonus) => sum + (bonus.winAmount || 0), 0);
-    const avgWinRate = totalSpent > 0 ? (totalWon / totalSpent) * 100 : 0;
-    
+    const [totalHuntsResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(hunts);
+
+    const [activeHuntsResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(hunts)
+      .where(eq(hunts.status, 'collecting'));
+
+    const [spentResult] = await db
+      .select({ 
+        total: sql<number>`COALESCE(SUM(CAST(${hunts.startBalance} AS NUMERIC) - COALESCE(CAST(${hunts.endBalance} AS NUMERIC), 0)), 0)` 
+      })
+      .from(hunts);
+
+    const [wonResult] = await db
+      .select({ 
+        total: sql<number>`COALESCE(SUM(CAST(${bonuses.winAmount} AS NUMERIC)), 0)` 
+      })
+      .from(bonuses)
+      .where(sql`${bonuses.winAmount} IS NOT NULL`);
+
     return {
-      totalHunts: totalHuntsResult.length,
-      activeHunts: activeHuntsResult.length,
-      totalSpent,
-      totalWon,
-      avgWinRate
+      totalHunts: totalHuntsResult.count,
+      activeHunts: activeHuntsResult.count,
+      totalSpent: Number(spentResult.total) || 0,
+      totalWon: Number(wonResult.total) || 0,
     };
+  }
+
+  async getLatestHunt(): Promise<Hunt | undefined> {
+    const result = await db
+      .select()
+      .from(hunts)
+      .orderBy(desc(hunts.createdAt))
+      .limit(1);
+    return result[0];
   }
 }
 
-export const storage = new SQLiteStorage();
-
-// Initialize slot database if empty
-(async () => {
-  try {
-    const count = await db.select().from(slotDatabase).limit(1);
-    if (count.length === 0) {
-      const csvPath = path.join(process.cwd(), 'public', 'slots.csv');
-      if (fs.existsSync(csvPath)) {
-        const csvData = fs.readFileSync(csvPath, 'utf-8');
-        await storage.initializeSlotDatabase(csvData);
-        console.log('Slot database initialized from CSV');
-      }
-    }
-  } catch (error) {
-    console.log('Slot database initialization skipped:', error instanceof Error ? error.message : 'Unknown error');
-  }
-})();
+export const storage = new DatabaseStorage();

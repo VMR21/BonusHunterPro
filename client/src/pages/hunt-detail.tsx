@@ -8,8 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Progress } from "@/components/ui/progress";
 import { AddBonusModal } from "@/components/add-bonus-modal";
 import { ProviderChart } from "@/components/provider-chart";
+import { StartPlayingButton } from "@/components/start-playing-button";
 import { useHunt } from "@/hooks/use-hunts";
 import { useBonuses } from "@/hooks/use-bonuses";
+import { useAdmin } from "@/hooks/use-admin";
 import { formatCurrency } from "@/lib/currency";
 import type { Currency } from "@/lib/currency";
 
@@ -19,6 +21,7 @@ export default function HuntDetailPage() {
   
   const { data: hunt, isLoading: huntLoading } = useHunt(id!);
   const { data: bonuses, isLoading: bonusesLoading } = useBonuses(id!);
+  const { isAdmin } = useAdmin();
 
   if (huntLoading || bonusesLoading) {
     return (
@@ -65,12 +68,12 @@ export default function HuntDetailPage() {
     finished: "bg-green-500/20 text-green-400 border-green-500/30",
   };
 
-  const openedBonuses = bonuses?.filter(b => b.status === 'opened') || [];
+  const openedBonuses = bonuses?.filter(b => b.isPlayed) || [];
   const totalBonuses = bonuses?.length || 0;
   const progress = totalBonuses > 0 ? (openedBonuses.length / totalBonuses) * 100 : 0;
   
-  const totalCost = bonuses?.reduce((sum, b) => sum + b.betAmount, 0) || 0;
-  const totalWin = openedBonuses.reduce((sum, b) => sum + (b.winAmount || 0), 0);
+  const totalCost = bonuses?.reduce((sum, b) => sum + Number(b.betAmount), 0) || 0;
+  const totalWin = openedBonuses.reduce((sum, b) => sum + (Number(b.winAmount) || 0), 0);
   const avgBet = totalBonuses > 0 ? totalCost / totalBonuses : 0;
   const reqX = totalCost > 0 ? (totalCost * 100) / totalCost : 0;
   const roi = totalCost > 0 ? ((totalWin - totalCost) / totalCost) * 100 : 0;
@@ -109,14 +112,19 @@ export default function HuntDetailPage() {
             <Badge className={statusColors[hunt.status as keyof typeof statusColors]}>
               {hunt.status}
             </Badge>
-            <Button 
-              onClick={() => setAddBonusModalOpen(true)}
-              className="bg-primary hover:bg-primary/90"
-              data-testid="button-add-bonus"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Bonus
-            </Button>
+            {isAdmin && (
+              <>
+                <StartPlayingButton hunt={hunt} bonuses={bonuses || []} />
+                <Button 
+                  onClick={() => setAddBonusModalOpen(true)}
+                  className="bg-primary hover:bg-primary/90"
+                  data-testid="button-add-bonus"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Bonus
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -242,7 +250,12 @@ export default function HuntDetailPage() {
                     {bonuses.map((bonus, index) => (
                       <TableRow 
                         key={bonus.id} 
-                        className={`hover:bg-white/5 ${bonus.status === 'opened' ? '' : 'bg-primary/10'}`}
+                        className={`hover:bg-white/5 ${bonus.isPlayed ? 'bg-green-900/20' : hunt.isPlaying && !bonus.isPlayed ? 'bg-blue-900/20 cursor-pointer' : 'bg-gray-900/20'}`}
+                        onClick={() => {
+                          if (hunt.isPlaying && !bonus.isPlayed && isAdmin) {
+                            // The click handler is in StartPlayingButton component
+                          }
+                        }}
                       >
                         <TableCell className="text-gray-300">{bonus.order}</TableCell>
                         <TableCell>
@@ -266,22 +279,27 @@ export default function HuntDetailPage() {
                               </div>
                             </div>
                             <span className="text-white text-sm">{bonus.slotName}</span>
-                            {bonus.status === 'waiting' && (
-                              <Badge variant="outline" className="ml-2 text-xs">
-                                WAITING
+                            {!bonus.isPlayed && hunt.isPlaying && (
+                              <Badge variant="outline" className="ml-2 text-xs text-blue-400 border-blue-400">
+                                READY TO PLAY
+                              </Badge>
+                            )}
+                            {bonus.isPlayed && (
+                              <Badge variant="outline" className="ml-2 text-xs text-green-400 border-green-400">
+                                PLAYED
                               </Badge>
                             )}
                           </div>
                         </TableCell>
                         <TableCell className="text-gray-300">{bonus.provider}</TableCell>
                         <TableCell className="text-white">
-                          {formatCurrency(bonus.betAmount, hunt.currency as Currency)}
+                          {formatCurrency(Number(bonus.betAmount), hunt.currency as Currency)}
                         </TableCell>
                         <TableCell className="text-yellow-400">
-                          {bonus.multiplier ? `${bonus.multiplier}x` : '-'}
+                          {bonus.multiplier ? `${Number(bonus.multiplier).toFixed(2)}x` : '-'}
                         </TableCell>
                         <TableCell className="text-green-400">
-                          {bonus.winAmount ? formatCurrency(bonus.winAmount, hunt.currency as Currency) : '-'}
+                          {bonus.winAmount ? formatCurrency(Number(bonus.winAmount), hunt.currency as Currency) : '-'}
                         </TableCell>
                       </TableRow>
                     ))}
