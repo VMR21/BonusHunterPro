@@ -1,11 +1,16 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trophy, User, Clock, DollarSign, Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
+import { Trophy, User, Clock, DollarSign, Eye, X, ArrowLeft, Play, Calculator } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import type { Currency } from "@/lib/currency";
 
 interface LiveHunt {
   id: string;
@@ -22,9 +27,22 @@ interface LiveHunt {
 }
 
 export default function LiveHuntsPage() {
+  const [selectedHunt, setSelectedHunt] = useState<LiveHunt | null>(null);
+  const [showHuntModal, setShowHuntModal] = useState(false);
+  
   const { data: liveHunts = [], isLoading } = useQuery<LiveHunt[]>({ 
     queryKey: ["/api/live-hunts"],
     refetchInterval: 3000, // Refresh every 3 seconds for live updates
+  });
+  
+  const { data: huntDetails, isLoading: huntDetailsLoading } = useQuery({
+    queryKey: [`/api/hunts/${selectedHunt?.id}`],
+    enabled: !!selectedHunt,
+  });
+
+  const { data: huntBonuses = [] } = useQuery({
+    queryKey: [`/api/hunts/${selectedHunt?.id}/bonuses`],
+    enabled: !!selectedHunt,
   });
   
   const { toast } = useToast();
@@ -44,8 +62,9 @@ export default function LiveHuntsPage() {
     }
   };
 
-  const handleViewHunt = (huntId: string) => {
-    setLocation(`/hunt/${huntId}`);
+  const handleViewHunt = (hunt: LiveHunt) => {
+    setSelectedHunt(hunt);
+    setShowHuntModal(true);
   };
 
   if (isLoading) {
@@ -149,7 +168,7 @@ export default function LiveHuntsPage() {
 
                   <div className="flex gap-2 mt-4">
                     <Button 
-                      onClick={() => handleViewHunt(hunt.id)}
+                      onClick={() => handleViewHunt(hunt)}
                       variant="outline" 
                       size="sm" 
                       className="flex-1 border-purple-600 text-purple-300 hover:bg-purple-600 hover:text-white"
@@ -164,6 +183,191 @@ export default function LiveHuntsPage() {
           ))}
         </div>
       )}
+
+      {/* Hunt Details Modal */}
+      <Dialog open={showHuntModal} onOpenChange={setShowHuntModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gray-900 border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-white flex items-center gap-2">
+              <Trophy className="w-6 h-6 text-yellow-500" />
+              {selectedHunt?.title}
+            </DialogTitle>
+            <DialogDescription className="text-gray-300">
+              Complete hunt details for {selectedHunt?.adminDisplayName}'s hunt
+            </DialogDescription>
+          </DialogHeader>
+
+          {huntDetailsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+              <span className="ml-3 text-white">Loading hunt details...</span>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Hunt Summary */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="bg-gray-800 border-gray-700">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-green-500" />
+                      <span className="text-sm text-gray-400">Start Balance</span>
+                    </div>
+                    <p className="text-lg font-bold text-white">
+                      {selectedHunt && formatCurrency(parseFloat(selectedHunt.startBalance), selectedHunt.currency as Currency)}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {selectedHunt?.endBalance && (
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="w-4 h-4 text-blue-500" />
+                        <span className="text-sm text-gray-400">End Balance</span>
+                      </div>
+                      <p className="text-lg font-bold text-white">
+                        {formatCurrency(parseFloat(selectedHunt.endBalance), selectedHunt.currency as Currency)}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <Card className="bg-gray-800 border-gray-700">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-purple-500" />
+                      <span className="text-sm text-gray-400">Admin</span>
+                    </div>
+                    <p className="text-lg font-bold text-white">
+                      {selectedHunt?.adminDisplayName}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Hunt Status */}
+              <div className="flex items-center gap-4">
+                <span className="text-gray-400">Status:</span>
+                {selectedHunt && (
+                  <Badge className={`${getStatusDisplay(selectedHunt).color} ${getStatusDisplay(selectedHunt).textColor}`}>
+                    {getStatusDisplay(selectedHunt).label}
+                  </Badge>
+                )}
+                {selectedHunt?.isPlaying && (
+                  <Badge className="bg-red-600 text-white border-red-600 animate-pulse">
+                    🔴 LIVE
+                  </Badge>
+                )}
+              </div>
+
+              {/* Bonuses Table */}
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <Calculator className="w-5 h-5" />
+                  Bonuses ({huntBonuses.length})
+                </h3>
+                
+                {huntBonuses.length === 0 ? (
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardContent className="p-8 text-center">
+                      <p className="text-gray-400">No bonuses added yet</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-gray-700">
+                          <TableHead className="text-gray-300">Slot</TableHead>
+                          <TableHead className="text-gray-300">Provider</TableHead>
+                          <TableHead className="text-gray-300">Bet</TableHead>
+                          <TableHead className="text-gray-300">Status</TableHead>
+                          <TableHead className="text-gray-300">Payout</TableHead>
+                          <TableHead className="text-gray-300">Multiplier</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {huntBonuses.map((bonus: any) => (
+                          <TableRow key={bonus.id} className="border-gray-700">
+                            <TableCell className="text-white font-medium">
+                              <div className="flex items-center gap-3">
+                                {bonus.imageUrl && (
+                                  <img 
+                                    src={bonus.imageUrl} 
+                                    alt={bonus.name}
+                                    className="w-8 h-8 rounded object-cover"
+                                  />
+                                )}
+                                <span>{bonus.name}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-gray-300">{bonus.provider}</TableCell>
+                            <TableCell className="text-white">
+                              {selectedHunt && formatCurrency(parseFloat(bonus.betAmount), selectedHunt.currency as Currency)}
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={bonus.isPlayed ? "default" : "secondary"}
+                                className={bonus.isPlayed ? "bg-green-600 text-white" : "bg-gray-600 text-gray-300"}
+                              >
+                                {bonus.isPlayed ? "PLAYED" : "WAITING"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-white">
+                              {bonus.winAmount 
+                                ? selectedHunt && formatCurrency(bonus.winAmount, selectedHunt.currency as Currency)
+                                : "-"
+                              }
+                            </TableCell>
+                            <TableCell className="text-white">
+                              {bonus.multiplier ? `${bonus.multiplier.toFixed(2)}x` : "-"}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+
+              {/* Progress */}
+              {huntBonuses.length > 0 && (
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-gray-400 text-sm">Progress</span>
+                    <span className="text-gray-300 text-sm">
+                      {huntBonuses.filter((b: any) => b.isPlayed).length}/{huntBonuses.length} bonuses played
+                    </span>
+                  </div>
+                  <Progress 
+                    value={(huntBonuses.filter((b: any) => b.isPlayed).length / huntBonuses.length) * 100} 
+                    className="h-2"
+                  />
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-4 border-t border-gray-700">
+                <Button
+                  onClick={() => setLocation(`/hunt/${selectedHunt?.id}`)}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Go to Hunt Page
+                </Button>
+                <Button
+                  onClick={() => setShowHuntModal(false)}
+                  variant="outline"
+                  className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

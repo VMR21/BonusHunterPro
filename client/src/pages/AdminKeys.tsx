@@ -45,11 +45,8 @@ export default function AdminKeys() {
 
   const createKeyMutation = useMutation({
     mutationFn: async (keyData: typeof newKey) => {
-      const response = await apiRequest("/api/admin/keys", {
-        method: "POST",
-        body: JSON.stringify(keyData),
-      });
-      return await response.json();
+      const response = await apiRequest("POST", "/api/admin/keys", keyData);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/keys"] });
@@ -72,11 +69,8 @@ export default function AdminKeys() {
 
   const updateKeyMutation = useMutation({
     mutationFn: async ({ id, ...data }: EditingKey) => {
-      const response = await apiRequest(`/api/admin/keys/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
-      return await response.json();
+      const response = await apiRequest("PUT", `/api/admin/keys/${id}`, data);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/keys"] });
@@ -98,10 +92,8 @@ export default function AdminKeys() {
 
   const deleteKeyMutation = useMutation({
     mutationFn: async (keyId: string) => {
-      const response = await apiRequest(`/api/admin/keys/${keyId}`, {
-        method: "DELETE",
-      });
-      return await response.json();
+      const response = await apiRequest("DELETE", `/api/admin/keys/${keyId}`);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/keys"] });
