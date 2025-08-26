@@ -159,6 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         url: `${req.protocol}://${req.get('host')}/public-hunt/${hunt.publicToken}`,
         publicUrl: `${req.protocol}://${req.get('host')}/public-hunt/${hunt.publicToken}`,
         obsUrl: `${req.protocol}://${req.get('host')}/obs-overlay/latest`,
+        obsOverlayLink: `${req.protocol}://${req.get('host')}/live-obs-overlay`,
         liveObsUrl: `${req.protocol}://${req.get('host')}/live-obs-overlay`
       });
     } catch (error) {
