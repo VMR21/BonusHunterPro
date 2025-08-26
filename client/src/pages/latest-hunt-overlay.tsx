@@ -78,7 +78,7 @@ export default function LatestHuntOverlay() {
     <div className="min-h-screen bg-transparent text-white p-8 overflow-hidden">
       <div className="max-w-6xl mx-auto">
         {/* Hunt Header Stats */}
-        <div className="bg-black/80 backdrop-blur-sm rounded-lg p-6 mb-6 border border-purple-500/30">
+        <div className="p-6 mb-6">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-3xl font-bold text-purple-300">{hunt.title}</h1>
             <Badge className="bg-purple-600 text-white px-3 py-1">
@@ -126,10 +126,10 @@ export default function LatestHuntOverlay() {
 
         {/* Next Bonus Highlight */}
         {nextBonus && (
-          <div className="bg-yellow-500/20 backdrop-blur-sm rounded-lg p-4 mb-6 border border-yellow-500/50 animate-pulse">
+          <div className="p-4 mb-6 animate-pulse">
             <div className="flex items-center gap-4">
               <div className="text-yellow-400 font-bold text-lg">NEXT:</div>
-              <div className="w-12 h-16 bg-gray-700 rounded overflow-hidden flex-shrink-0">
+              <div className="w-12 h-16 rounded overflow-hidden flex-shrink-0">
                 <img 
                   src={nextBonus.imageUrl} 
                   alt={nextBonus.slotName}
@@ -148,11 +148,11 @@ export default function LatestHuntOverlay() {
         )}
 
         {/* Slots in Hunt Table */}
-        <div className="bg-black/80 backdrop-blur-sm rounded-lg p-6 border border-purple-500/30">
+        <div className="p-6">
           <h2 className="text-xl font-bold text-purple-300 mb-4">Slots in Hunt</h2>
           
           {/* Table Header */}
-          <div className="grid grid-cols-6 gap-4 mb-4 px-4 py-2 bg-gray-800/50 rounded-lg">
+          <div className="grid grid-cols-6 gap-4 mb-4 px-4 py-2">
             <div className="text-center text-gray-300 text-sm font-medium">#</div>
             <div className="text-left text-gray-300 text-sm font-medium">Slot</div>
             <div className="text-center text-gray-300 text-sm font-medium">Bet Size</div>
@@ -172,13 +172,8 @@ export default function LatestHuntOverlay() {
                   <div 
                     key={`slot-${bonus.id}-${index}`}
                     className={`
-                      w-full rounded-lg border-2 transition-all
-                      ${isNext 
-                        ? 'bg-yellow-900/30 border-yellow-500 animate-pulse' 
-                        : bonus.isPlayed 
-                        ? 'bg-green-900/30 border-green-500' 
-                        : 'bg-gray-900/30 border-gray-700'
-                      }
+                      w-full rounded-lg transition-all
+                      ${isNext ? 'animate-pulse' : ''}
                     `}
                   >
                     <div className="grid grid-cols-6 gap-4 items-center p-6 h-24">
@@ -189,7 +184,7 @@ export default function LatestHuntOverlay() {
                       </div>
                       
                       <div className="flex items-center gap-3">
-                        <div className="w-14 h-14 bg-gray-700 rounded overflow-hidden flex-shrink-0">
+                        <div className="w-14 h-14 rounded overflow-hidden flex-shrink-0">
                           <img 
                             src={bonus.imageUrl} 
                             alt={bonus.slotName}
@@ -206,9 +201,7 @@ export default function LatestHuntOverlay() {
                         {formatCurrency(Number(bonus.betAmount), hunt.currency as Currency)}
                       </div>
                       
-                      <div className={`text-center text-xl font-bold ${
-                        isNext ? 'text-yellow-400' : 'text-yellow-400'
-                      }`}>
+                      <div className="text-center text-yellow-400 text-xl font-bold">
                         {bonus.isPlayed && bonus.multiplier ? 
                           `${Number(bonus.multiplier).toFixed(2)}x` : 
                           '-'
@@ -245,13 +238,8 @@ export default function LatestHuntOverlay() {
                   <div 
                     key={`slot-duplicate-${bonus.id}-${index}`}
                     className={`
-                      w-full rounded-lg border-2 transition-all
-                      ${isNext 
-                        ? 'bg-yellow-900/30 border-yellow-500 animate-pulse' 
-                        : bonus.isPlayed 
-                        ? 'bg-green-900/30 border-green-500' 
-                        : 'bg-gray-900/30 border-gray-700'
-                      }
+                      w-full rounded-lg transition-all
+                      ${isNext ? 'animate-pulse' : ''}
                     `}
                   >
                     <div className="grid grid-cols-6 gap-4 items-center p-6 h-24">
@@ -262,7 +250,7 @@ export default function LatestHuntOverlay() {
                       </div>
                       
                       <div className="flex items-center gap-3">
-                        <div className="w-14 h-14 bg-gray-700 rounded overflow-hidden flex-shrink-0">
+                        <div className="w-14 h-14 rounded overflow-hidden flex-shrink-0">
                           <img 
                             src={bonus.imageUrl} 
                             alt={bonus.slotName}
@@ -279,9 +267,7 @@ export default function LatestHuntOverlay() {
                         {formatCurrency(Number(bonus.betAmount), hunt.currency as Currency)}
                       </div>
                       
-                      <div className={`text-center text-xl font-bold ${
-                        isNext ? 'text-yellow-400' : 'text-yellow-400'
-                      }`}>
+                      <div className="text-center text-yellow-400 text-xl font-bold">
                         {bonus.isPlayed && bonus.multiplier ? 
                           `${Number(bonus.multiplier).toFixed(2)}x` : 
                           '-'
