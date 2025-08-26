@@ -20,14 +20,7 @@ export function useAdmin() {
       if (!sessionToken) {
         throw new Error('No session token');
       }
-      const response = await fetch('/api/admin/check', {
-        headers: {
-          'Authorization': `Bearer ${sessionToken}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error('Session check failed');
-      }
+      const response = await apiRequest('GET', '/api/admin/check');
       return response.json();
     },
   });
