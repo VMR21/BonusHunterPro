@@ -108,13 +108,7 @@ export function useAdminRequest() {
         throw new Error('Not authenticated as admin');
       }
 
-      return apiRequest(url, {
-        ...options,
-        headers: {
-          ...options.headers,
-          'Authorization': `Bearer ${sessionToken}`,
-        },
-      });
+      return apiRequest(options.method || "GET", url, options.body);
     },
     sessionToken,
   };
