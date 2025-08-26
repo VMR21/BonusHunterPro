@@ -12,9 +12,19 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const headers: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
+  
+  // Add API key for admin routes
+  if (url.includes('/admin/') || url.includes('/api/admin/')) {
+    const apiKey = localStorage.getItem('bh_api_key');
+    if (apiKey) {
+      headers['x-api-key'] = apiKey;
+    }
+  }
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });

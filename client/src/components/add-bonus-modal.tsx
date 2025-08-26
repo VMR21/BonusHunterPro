@@ -106,6 +106,7 @@ export function AddBonusModal({ open, onOpenChange, huntId, nextOrder }: AddBonu
               onChange={(e) => handleSlotSearch(e.target.value)}
               placeholder="Search slot games..."
               required
+              className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400"
               data-testid="input-slot-search"
             />
             {showSuggestions && slotSuggestions.length > 0 && (
@@ -158,6 +159,7 @@ export function AddBonusModal({ open, onOpenChange, huntId, nextOrder }: AddBonu
               onChange={(e) => setFormData({ ...formData, betAmount: parseFloat(e.target.value) || 0 })}
               placeholder="0.00"
               required
+              className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400"
               data-testid="input-bet-amount"
             />
           </div>

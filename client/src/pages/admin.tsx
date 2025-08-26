@@ -133,7 +133,7 @@ export default function AdminPage() {
                 placeholder="Enter API Key"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                className="flex-1"
+                className="flex-1 bg-gray-800 border-gray-700 text-white placeholder:text-gray-400"
                 data-testid="input-api-key"
               />
               <Button 

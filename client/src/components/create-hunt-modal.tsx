@@ -71,6 +71,7 @@ export function CreateHuntModal({ open, onOpenChange }: CreateHuntModalProps) {
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="Enter hunt title"
               required
+              className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400"
               data-testid="input-hunt-title"
             />
           </div>
@@ -83,6 +84,7 @@ export function CreateHuntModal({ open, onOpenChange }: CreateHuntModalProps) {
               onChange={(e) => setFormData({ ...formData, casino: e.target.value })}
               placeholder="Enter casino name"
               required
+              className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400"
               data-testid="input-casino-name"
             />
           </div>
@@ -93,13 +95,13 @@ export function CreateHuntModal({ open, onOpenChange }: CreateHuntModalProps) {
               value={formData.currency}
               onValueChange={(value) => setFormData({ ...formData, currency: value })}
             >
-              <SelectTrigger data-testid="select-currency">
+              <SelectTrigger className="bg-gray-800 border-gray-700 text-white" data-testid="select-currency">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="USD">USD ($)</SelectItem>
-                <SelectItem value="CAD">CAD (C$)</SelectItem>
-                <SelectItem value="AUD">AUD (A$)</SelectItem>
+              <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectItem value="USD" className="text-white hover:bg-gray-700">USD ($)</SelectItem>
+                <SelectItem value="CAD" className="text-white hover:bg-gray-700">CAD (C$)</SelectItem>
+                <SelectItem value="AUD" className="text-white hover:bg-gray-700">AUD (A$)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -114,6 +116,7 @@ export function CreateHuntModal({ open, onOpenChange }: CreateHuntModalProps) {
               onChange={(e) => setFormData({ ...formData, startBalance: parseFloat(e.target.value) || 0 })}
               placeholder="0.00"
               required
+              className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400"
               data-testid="input-start-balance"
             />
           </div>
@@ -125,7 +128,7 @@ export function CreateHuntModal({ open, onOpenChange }: CreateHuntModalProps) {
               value={formData.notes || ""}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Add any notes about this hunt..."
-              className="h-20 resize-none"
+              className="h-20 resize-none bg-gray-800 border-gray-700 text-white placeholder:text-gray-400"
               data-testid="input-notes"
             />
           </div>
