@@ -9,7 +9,7 @@ export default function LatestHuntOverlay() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('/obs-overlay/latest');
+        const response = await fetch('/api/obs-overlay/latest');
         const result = await response.json();
         setData(result);
       } catch (error) {

@@ -325,6 +325,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // OBS overlay route for latest hunt
+  app.get('/api/obs-overlay/latest', async (req, res) => {
+    try {
+      const latestHunt = await storage.getLatestActiveHunt();
+      
+      if (!latestHunt) {
+        return res.json({ hunt: null, bonuses: [] });
+      }
+      
+      const bonuses = await storage.getBonusesByHuntId(latestHunt.id);
+      res.json({ hunt: latestHunt, bonuses });
+    } catch (error) {
+      console.error('Error fetching latest hunt:', error);
+      res.status(500).json({ error: 'Failed to fetch latest hunt' });
+    }
+  });
+
   // Public hunt view
   app.get("/api/public/:token", async (req, res) => {
     try {
