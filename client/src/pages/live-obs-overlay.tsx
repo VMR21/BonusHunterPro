@@ -135,17 +135,26 @@ export default function LiveOBSOverlay() {
         {bonuses && bonuses.length > 0 && (
           <div className="bg-black/80 backdrop-blur-sm rounded-lg p-6 border border-purple-500/30">
             <h2 className="text-xl font-bold text-purple-300 mb-4">Slots in Hunt</h2>
+            
+            {/* Column Headers */}
+            <div className="grid grid-cols-6 gap-4 mb-4 px-4 py-2 bg-gray-800/50 rounded-lg">
+              <div className="text-center text-gray-300 text-sm font-medium">#</div>
+              <div className="text-left text-gray-300 text-sm font-medium">Slot</div>
+              <div className="text-center text-gray-300 text-sm font-medium">Bet Size</div>
+              <div className="text-center text-gray-300 text-sm font-medium">Multiplier</div>
+              <div className="text-center text-gray-300 text-sm font-medium">Payout</div>
+              <div className="text-center text-gray-300 text-sm font-medium">Status</div>
+            </div>
+
             <div className="relative overflow-hidden h-96">
               <div 
-                className="transition-transform duration-1000 ease-in-out space-y-4"
-                style={{
-                  transform: `translateY(-${Math.max(0, (openedBonuses.length - 2) * 100)}px)`,
-                }}
+                className={`space-y-3 ${bonuses.length > 1 ? 'animate-scroll' : ''}`}
               >
-                {bonuses.map((bonus: any, index: number) => (
+                {/* Duplicate bonuses for seamless scrolling */}
+                {[...bonuses, ...bonuses].map((bonus, index) => (
                   <div 
-                    key={bonus.id}
-                    className={`w-full h-20 rounded-lg border-2 transition-all ${
+                    key={`${bonus.id}-${index}`}
+                    className={`w-full rounded-lg border-2 transition-all ${
                       bonus.isPlayed 
                         ? 'bg-green-900/30 border-green-500' 
                         : bonus === nextBonus 
@@ -153,56 +162,59 @@ export default function LiveOBSOverlay() {
                           : 'bg-gray-900/30 border-gray-700'
                     }`}
                   >
-                    <div className="p-4 h-full flex items-center gap-6">
+                    <div className="grid grid-cols-6 gap-4 items-center p-4 h-20">
                       {/* Slot Number */}
-                      <div className={`text-2xl font-bold w-16 text-center ${
+                      <div className={`text-center text-2xl font-bold ${
                         bonus.isPlayed ? 'text-green-400' : 
                         bonus === nextBonus ? 'text-yellow-400' : 'text-gray-400'
                       }`}>
                         #{bonus.order}
                       </div>
                       
-                      {/* Slot Image */}
-                      <div className="w-16 h-12 bg-gray-700 rounded overflow-hidden flex-shrink-0">
-                        {bonus.imageUrl ? (
-                          <img
-                            src={bonus.imageUrl}
-                            alt={bonus.slotName}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">
-                            No image
-                          </div>
-                        )}
+                      {/* Slot Info with Image */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gray-700 rounded overflow-hidden flex-shrink-0">
+                          {bonus.imageUrl ? (
+                            <img
+                              src={bonus.imageUrl}
+                              alt={bonus.slotName}
+                              className="w-full h-full object-contain"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">
+                              No image
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-white font-medium text-sm truncate">{bonus.slotName}</div>
+                          <div className="text-gray-400 text-xs truncate">{bonus.provider}</div>
+                        </div>
                       </div>
                       
-                      {/* Slot Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="text-white font-medium text-lg truncate">{bonus.slotName}</div>
-                        <div className="text-gray-400 text-sm truncate">{bonus.provider}</div>
-                      </div>
-                      
-                      {/* Bet Amount */}
-                      <div className="text-green-400 text-lg font-mono">
+                      {/* Bet Size */}
+                      <div className="text-center text-green-400 text-lg font-mono">
                         {formatCurrency(Number(bonus.betAmount), hunt.currency as Currency)}
                       </div>
                       
-                      {/* Payout and Status */}
-                      <div className="w-32 text-right">
+                      {/* Multiplier */}
+                      <div className="text-center text-yellow-400 text-lg font-bold">
+                        {bonus.isPlayed ? `${Number(bonus.multiplier || 0).toFixed(2)}x` : '-'}
+                      </div>
+                      
+                      {/* Payout */}
+                      <div className="text-center text-white text-lg font-bold">
+                        {bonus.isPlayed ? formatCurrency(Number(bonus.winAmount || 0), hunt.currency as Currency) : '-'}
+                      </div>
+                      
+                      {/* Status */}
+                      <div className="text-center">
                         {bonus.isPlayed ? (
-                          <div>
-                            <div className="text-white font-bold text-lg">
-                              {formatCurrency(Number(bonus.winAmount || 0), hunt.currency as Currency)}
-                            </div>
-                            <div className="text-yellow-400 text-sm">
-                              {Number(bonus.multiplier || 0).toFixed(2)}x
-                            </div>
-                          </div>
+                          <span className="text-green-400 text-sm font-medium">PLAYED</span>
                         ) : bonus === nextBonus ? (
-                          <span className="text-yellow-400 text-lg font-medium animate-pulse">NEXT</span>
+                          <span className="text-yellow-400 text-sm font-medium animate-pulse">NEXT</span>
                         ) : (
-                          <span className="text-gray-500 text-lg">WAITING</span>
+                          <span className="text-gray-500 text-sm">WAITING</span>
                         )}
                       </div>
                     </div>
@@ -212,6 +224,8 @@ export default function LiveOBSOverlay() {
             </div>
           </div>
         )}
+        
+
       </div>
 
 
