@@ -17,7 +17,7 @@ export function Navigation() {
     { path: "/", label: "My Hunts", icon: Trophy },
     { path: "/live", label: "Live Hunts", icon: Users },
     ...(isAuthenticated ? [
-      { path: "/obs", label: "OBS Overlay", icon: Eye },
+      { path: "/latest-hunt-overlay", label: "OBS Overlay", icon: Eye },
       // Only show Admin Keys for GambiZard admin
       ...(adminKey === "GZ-239-2932-92302" ? [
         { path: "/admin-keys", label: "Admin Keys", icon: Key },

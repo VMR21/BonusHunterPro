@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import type { Currency } from "@/lib/currency";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function LatestHuntOverlay() {
   const [data, setData] = useState<any>(null);
@@ -9,8 +10,7 @@ export default function LatestHuntOverlay() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('/api/obs-overlay/latest');
-        const result = await response.json();
+        const result = await apiRequest('/api/obs-overlay/latest');
         setData(result);
       } catch (error) {
         console.error('Error fetching OBS data:', error);

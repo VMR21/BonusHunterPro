@@ -89,6 +89,7 @@ export interface IStorage {
   getLatestHunt(): Promise<Hunt | undefined>;
   getLatestAdminHunt(adminKey: string): Promise<Hunt | undefined>;
   getLatestActiveHunt(): Promise<Hunt | undefined>;
+  getLatestAdminActiveHunt(adminKey: string): Promise<Hunt | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -467,6 +468,16 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(hunts)
       .where(sql`${hunts.status} != 'finished'`)
+      .orderBy(desc(hunts.updatedAt))
+      .limit(1);
+    return result[0];
+  }
+
+  async getLatestAdminActiveHunt(adminKey: string): Promise<Hunt | undefined> {
+    const result = await db
+      .select()
+      .from(hunts)
+      .where(sql`${hunts.adminKey} = ${adminKey} AND ${hunts.status} != 'finished'`)
       .orderBy(desc(hunts.updatedAt))
       .limit(1);
     return result[0];

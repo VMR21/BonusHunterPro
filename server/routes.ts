@@ -325,10 +325,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // OBS overlay route for latest hunt
-  app.get('/api/obs-overlay/latest', async (req, res) => {
+  // OBS overlay route for latest hunt (admin-specific)
+  app.get('/api/obs-overlay/latest', optionalAdmin, async (req: AuthenticatedRequest, res) => {
     try {
-      const latestHunt = await storage.getLatestActiveHunt();
+      let latestHunt;
+      if (req.adminKey) {
+        latestHunt = await storage.getLatestAdminActiveHunt(req.adminKey);
+      } else {
+        latestHunt = await storage.getLatestActiveHunt();
+      }
       
       if (!latestHunt) {
         return res.json({ hunt: null, bonuses: [] });
