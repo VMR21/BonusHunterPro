@@ -8,6 +8,7 @@ export function Navigation() {
 
   const navItems = [
     { path: "/", label: "Hunts", icon: Trophy },
+    { path: "/latest-hunt", label: "Live Hunt", icon: Eye },
     { path: "/admin", label: "Admin", icon: Settings },
     { path: "/obs", label: "OBS Overlay", icon: Eye },
   ];

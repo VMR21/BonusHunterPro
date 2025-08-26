@@ -247,13 +247,24 @@ export default function HuntDetailPage() {
                         <TableCell className="text-gray-300">{bonus.order}</TableCell>
                         <TableCell>
                           <div className="flex items-center">
-                            {bonus.imageUrl && (
-                              <img
-                                src={bonus.imageUrl}
-                                alt={bonus.slotName}
-                                className="w-8 h-10 rounded mr-3"
-                              />
-                            )}
+                            <div className="w-10 h-12 bg-gray-700 rounded overflow-hidden mr-3 flex-shrink-0">
+                              {bonus.imageUrl ? (
+                                <img
+                                  src={bonus.imageUrl}
+                                  alt={bonus.slotName}
+                                  className="w-full h-full object-cover"
+                                  data-testid={`img-slot-${bonus.id}`}
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    target.nextElementSibling?.classList.remove('hidden');
+                                  }}
+                                />
+                              ) : null}
+                              <div className={`w-full h-full flex items-center justify-center text-gray-500 text-xs ${bonus.imageUrl ? 'hidden' : ''}`}>
+                                No image
+                              </div>
+                            </div>
                             <span className="text-white text-sm">{bonus.slotName}</span>
                             {bonus.status === 'waiting' && (
                               <Badge variant="outline" className="ml-2 text-xs">

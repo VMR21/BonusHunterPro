@@ -233,6 +233,40 @@ export class SQLiteStorage implements IStorage {
         set: { value },
       });
   }
+
+  async getLatestHunt(): Promise<Hunt | null> {
+    const result = await db.select().from(hunts).orderBy(desc(hunts.createdAt)).limit(1);
+    return result[0] || null;
+  }
+
+  async getStats(): Promise<{
+    totalHunts: number;
+    activeHunts: number;
+    totalSpent: number;
+    totalWon: number;
+    avgWinRate: number;
+  }> {
+    const totalHuntsResult = await db.select().from(hunts);
+    const activeHuntsResult = await db.select().from(hunts).where(sql`status != 'finished'`);
+    const totalSpentResult = await db.select().from(hunts).where(sql`end_balance IS NOT NULL`);
+    const totalWonResult = await db.select().from(bonuses).where(sql`win_amount IS NOT NULL`);
+    
+    const totalSpent = totalSpentResult.reduce((sum, hunt) => {
+      const spent = hunt.startBalance - (hunt.endBalance || hunt.startBalance);
+      return sum + (spent > 0 ? spent : 0);
+    }, 0);
+    
+    const totalWon = totalWonResult.reduce((sum, bonus) => sum + (bonus.winAmount || 0), 0);
+    const avgWinRate = totalSpent > 0 ? (totalWon / totalSpent) * 100 : 0;
+    
+    return {
+      totalHunts: totalHuntsResult.length,
+      activeHunts: activeHuntsResult.length,
+      totalSpent,
+      totalWon,
+      avgWinRate
+    };
+  }
 }
 
 export const storage = new SQLiteStorage();

@@ -25,6 +25,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/stats", async (req, res) => {
+    try {
+      const stats = await storage.getStats();
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch stats" });
+    }
+  });
+
   app.get("/api/hunts/:id", async (req, res) => {
     try {
       const hunt = await storage.getHunt(req.params.id);
@@ -198,6 +207,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ valid: true });
     } else {
       res.status(401).json({ valid: false });
+    }
+  });
+
+  // Get latest hunt for OBS overlay - auto-refreshing
+  app.get('/api/latest-hunt', async (req, res) => {
+    try {
+      const latestHunt = await storage.getLatestHunt();
+      const bonuses = latestHunt ? await storage.getBonusesByHuntId(latestHunt.id) : [];
+      
+      // Set cache headers for real-time updates
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      res.json({ hunt: latestHunt, bonuses });
+    } catch (error) {
+      console.error('Error fetching latest hunt:', error);
+      res.status(500).json({ error: 'Failed to fetch latest hunt' });
+    }
+  });
+
+  // Get live public link for latest hunt
+  app.get('/api/latest-hunt/public-link', async (req, res) => {
+    try {
+      const latestHunt = await storage.getLatestHunt();
+      if (!latestHunt) {
+        return res.status(404).json({ error: 'No hunt found' });
+      }
+      
+      const publicLink = `${req.protocol}://${req.get('host')}/public/${latestHunt.publicToken}`;
+      const obsOverlayLink = `${req.protocol}://${req.get('host')}/obs-overlay/${latestHunt.id}`;
+      
+      res.json({ 
+        huntId: latestHunt.id,
+        publicLink,
+        obsOverlayLink,
+        title: latestHunt.title,
+        status: latestHunt.status
+      });
+    } catch (error) {
+      console.error('Error getting public link:', error);
+      res.status(500).json({ error: 'Failed to get public link' });
     }
   });
 
