@@ -1,0 +1,9 @@
+# Admin Keys Configuration
+# Format: DisplayName - KeyValue
+# Add new admin keys below, one per line
+
+ProjectGamba - PG-7X9F-2KLM-88RW
+GambiZard - GZ-239-2932-92302
+MainAdmin - admin123
+SecondaryAdmin - admin456
+StreamerAccount - streamer789

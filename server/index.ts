@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { syncAdminKeysFromFile, watchAdminKeysFile } from "./adminKeyLoader";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
@@ -37,6 +38,14 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Sync admin keys from file on startup
+  await syncAdminKeysFromFile();
+  
+  // Watch for file changes in development
+  if (app.get("env") === "development") {
+    watchAdminKeysFile();
+  }
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

@@ -53,6 +53,7 @@ A comprehensive bonus hunting platform for slot machine enthusiasts and streamer
 - Currency formatting using Intl API
 - Real-time progress tracking
 - OBS integration for streaming
+- Simple file-based admin key management using admin-keys.txt format "DisplayName - KeyValue"
 
 ## Key Features Available to All Users
 - **Hunt Management**: Create, edit, and delete bonus hunts
@@ -62,6 +63,10 @@ A comprehensive bonus hunting platform for slot machine enthusiasts and streamer
 - **Edit Functionality**: Edit bet amounts and hunt details without restrictions
 
 ## Recent Changes
+- **File-based Admin Key Management**: Created admin-keys.txt for easy admin key addition with simple format "DisplayName - KeyValue" (Aug 2025)
+- **Auto-sync System**: Added adminKeyLoader.ts to automatically sync text file keys with database on server startup (Aug 2025)
+- **Multi-admin Platform**: Complete separation of admin logins with isolated hunts while maintaining unified live hunts view (Aug 2025)
+- **Admin Keys Management**: Full CRUD functionality for admin keys via AdminKeys page and API routes (Aug 2025)
 - **Database Migration**: Migrated from SQLite to PostgreSQL for enhanced performance (Jan 2025)
 - **Admin Authentication Removal**: Removed admin authentication system in favor of existing login system (Aug 2025)
 - **Public API Access**: Made all functionality accessible without admin requirements (Aug 2025)
