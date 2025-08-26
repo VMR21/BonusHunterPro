@@ -19,10 +19,10 @@ export function CreateHuntModal({ open, onOpenChange }: CreateHuntModalProps) {
     title: "",
     casino: "",
     currency: "USD",
-    startBalance: 0,
+    startBalance: "0",
     status: "collecting",
     notes: "",
-    isPublic: 0,
+    isPublic: false,
   });
 
   const createHunt = useCreateHunt();
@@ -42,10 +42,10 @@ export function CreateHuntModal({ open, onOpenChange }: CreateHuntModalProps) {
         title: "",
         casino: "",
         currency: "USD",
-        startBalance: 0,
+        startBalance: "0",
         status: "collecting",
         notes: "",
-        isPublic: 0,
+        isPublic: false,
       });
     } catch (error) {
       toast({
@@ -113,7 +113,7 @@ export function CreateHuntModal({ open, onOpenChange }: CreateHuntModalProps) {
               type="number"
               step="0.01"
               value={formData.startBalance}
-              onChange={(e) => setFormData({ ...formData, startBalance: parseFloat(e.target.value) || 0 })}
+              onChange={(e) => setFormData({ ...formData, startBalance: e.target.value })}
               placeholder="0.00"
               required
               className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400"

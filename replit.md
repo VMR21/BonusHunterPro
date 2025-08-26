@@ -63,11 +63,14 @@ A comprehensive bonus hunting platform for slot machine enthusiasts and streamer
 
 ## Recent Changes
 - **Database Migration**: Migrated from SQLite to PostgreSQL for enhanced performance (Jan 2025)
-- **Admin Authentication**: Implemented comprehensive JWT-based session system
+- **Admin Authentication**: Implemented comprehensive JWT-based session system with Bearer tokens
+- **Bug Fixes**: Fixed authentication system using JWT Bearer tokens instead of API keys (Aug 2025)
+- **Form Validation**: Fixed hunt/bonus creation forms to use proper string/boolean types (Aug 2025) 
+- **Delete Functionality**: Added delete hunt option for admin users with confirmation (Aug 2025)
+- **UI Improvements**: Fixed image loading errors and null safety in latest-hunt page (Aug 2025)
 - **Gameplay Functionality**: Added "Start Playing" with payout recording and multiplier calculation
 - **Security Enhancement**: All admin routes now require authentication
 - **Slot Database**: Imported 3,376 slots with complete metadata
-- **UI Improvements**: Updated navigation with admin login/logout controls
 
 ## Environment Variables
 - `ADMIN_KEY`: Required for admin authentication
