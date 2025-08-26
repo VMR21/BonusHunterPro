@@ -20,7 +20,7 @@ export function useCreateHunt() {
   
   return useMutation({
     mutationFn: async (hunt: InsertHunt) => {
-      const response = await apiRequest("POST", "/api/admin/hunts", hunt);
+      const response = await apiRequest("POST", "/api/hunts", hunt);
       return response.json();
     },
     onSuccess: () => {
@@ -34,7 +34,7 @@ export function useUpdateHunt() {
   
   return useMutation({
     mutationFn: async ({ id, ...data }: { id: string } & Partial<Hunt>) => {
-      const response = await apiRequest("PUT", `/api/admin/hunts/${id}`, data);
+      const response = await apiRequest("PUT", `/api/hunts/${id}`, data);
       return response.json();
     },
     onSuccess: (_, { id }) => {
@@ -49,7 +49,7 @@ export function useDeleteHunt() {
   
   return useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest("DELETE", `/api/admin/hunts/${id}`);
+      await apiRequest("DELETE", `/api/hunts/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/hunts"] });
