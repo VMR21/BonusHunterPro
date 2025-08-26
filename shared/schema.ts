@@ -72,7 +72,6 @@ export const insertSlotSchema = createInsertSchema(slotDatabase).omit({
 });
 
 export const payoutSchema = z.object({
-  bonusId: z.string().uuid(),
   winAmount: z.number().min(0),
 });
 
