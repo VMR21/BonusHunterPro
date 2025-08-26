@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Users, Crown, Zap } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Player {
   name: string;
@@ -28,8 +29,7 @@ export default function TournamentPage() {
   const [tournamentSize, setTournamentSize] = useState<TournamentSize>(8);
   const [bracket, setBracket] = useState<TournamentBracket>({});
   const [champion, setChampion] = useState<string>("");
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [adminPassword, setAdminPassword] = useState("");
+  const { isAuthenticated } = useAuth();
 
   // Initialize bracket when tournament size changes
   useEffect(() => {
@@ -83,7 +83,7 @@ export default function TournamentPage() {
   };
 
   const updatePlayer = (roundName: string, matchIndex: number, playerKey: 'player1' | 'player2', field: 'name' | 'multiplier', value: string) => {
-    if (!isAdmin) return;
+    if (!isAuthenticated) return;
 
     setBracket(prev => {
       const newBracket = { ...prev };
@@ -103,7 +103,7 @@ export default function TournamentPage() {
   };
 
   const decideWinner = (roundName: string, matchIndex: number) => {
-    if (!isAdmin) return;
+    if (!isAuthenticated) return;
 
     const match = bracket[roundName][matchIndex];
     const { player1, player2 } = match;
@@ -154,19 +154,9 @@ export default function TournamentPage() {
   };
 
   const resetTournament = () => {
-    if (!isAdmin) return;
+    if (!isAuthenticated) return;
     if (confirm("Reset all tournament data?")) {
       initializeBracket();
-    }
-  };
-
-  const handleAdminLogin = () => {
-    // Simple admin check - in real app this would be more secure
-    if (adminPassword === "tournament123") {
-      setIsAdmin(true);
-      setAdminPassword("");
-    } else {
-      alert("Invalid admin password!");
     }
   };
 
@@ -206,25 +196,7 @@ export default function TournamentPage() {
         </div>
 
         {/* Admin Panel */}
-        {!isAdmin ? (
-          <Card className="bg-gray-900 border-gray-700 max-w-md mx-auto mb-6">
-            <CardContent className="p-4">
-              <div className="flex gap-2">
-                <Input
-                  type="password"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  placeholder="Admin Password"
-                  className="bg-gray-800 border-gray-600 text-white"
-                  onKeyDown={(e) => e.key === 'Enter' && handleAdminLogin()}
-                />
-                <Button onClick={handleAdminLogin} className="bg-cyan-600 hover:bg-cyan-700">
-                  Login
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
+        {isAuthenticated && (
           <div className="flex justify-center gap-4 mb-6">
             <Badge variant="outline" className="border-cyan-500 text-cyan-400">
               <Crown className="w-4 h-4 mr-2" />
@@ -234,6 +206,14 @@ export default function TournamentPage() {
               Reset Tournament
             </Button>
           </div>
+        )}
+        
+        {!isAuthenticated && (
+          <Card className="bg-gray-900 border-gray-700 max-w-md mx-auto mb-6">
+            <CardContent className="p-4 text-center text-gray-400">
+              Please log in with your admin key to manage tournaments
+            </CardContent>
+          </Card>
         )}
       </div>
 
@@ -271,7 +251,7 @@ export default function TournamentPage() {
                         value={match.player1.name}
                         onChange={(e) => updatePlayer(roundName, matchIndex, 'player1', 'name', e.target.value)}
                         placeholder={roundName === "Round 1" ? `Player ${matchIndex * 2 + 1}` : "Winner advances"}
-                        disabled={!isAdmin || match.completed}
+                        disabled={!isAuthenticated || match.completed}
                         className="bg-gray-800 border-gray-600 text-white flex-1"
                       />
                       <Input
@@ -279,7 +259,7 @@ export default function TournamentPage() {
                         value={match.player1.multiplier || ""}
                         onChange={(e) => updatePlayer(roundName, matchIndex, 'player1', 'multiplier', e.target.value)}
                         placeholder="x"
-                        disabled={!isAdmin || match.completed}
+                        disabled={!isAuthenticated || match.completed}
                         className="bg-gray-800 border-gray-600 text-white w-20"
                         step="0.01"
                       />
@@ -294,7 +274,7 @@ export default function TournamentPage() {
                         value={match.player2.name}
                         onChange={(e) => updatePlayer(roundName, matchIndex, 'player2', 'name', e.target.value)}
                         placeholder={roundName === "Round 1" ? `Player ${matchIndex * 2 + 2}` : "Winner advances"}
-                        disabled={!isAdmin || match.completed}
+                        disabled={!isAuthenticated || match.completed}
                         className="bg-gray-800 border-gray-600 text-white flex-1"
                       />
                       <Input
@@ -302,14 +282,14 @@ export default function TournamentPage() {
                         value={match.player2.multiplier || ""}
                         onChange={(e) => updatePlayer(roundName, matchIndex, 'player2', 'multiplier', e.target.value)}
                         placeholder="x"
-                        disabled={!isAdmin || match.completed}
+                        disabled={!isAuthenticated || match.completed}
                         className="bg-gray-800 border-gray-600 text-white w-20"
                         step="0.01"
                       />
                     </div>
 
                     {/* Decide Winner Button */}
-                    {isAdmin && canDecideWinner(match) && (
+                    {isAuthenticated && canDecideWinner(match) && (
                       <Button
                         onClick={() => decideWinner(roundName, matchIndex)}
                         className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700"
@@ -343,7 +323,7 @@ export default function TournamentPage() {
         </CardHeader>
         <CardContent className="text-gray-400 space-y-2">
           <p>1. Select tournament size (4, 8, 16, or 32 players)</p>
-          <p>2. Enter admin password to enable editing (Password: tournament123)</p>
+          <p>2. Log in with your admin key to enable editing</p>
           <p>3. Fill in player names and multipliers for Round 1 matches</p>
           <p>4. Click "Decide Winner" to advance the player with higher multiplier</p>
           <p>5. Winners automatically advance to the next round</p>

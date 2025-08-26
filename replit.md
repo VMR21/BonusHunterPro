@@ -66,6 +66,7 @@ A comprehensive bonus hunting platform for slot machine enthusiasts and streamer
 
 ## Recent Changes
 - **Tournament System Added**: Created comprehensive tournament bracket system with 4, 8, 16, and 32 player support, admin password protection, automatic winner advancement, and beautiful card-based UI with gradient styling (Aug 2025)
+- **Tournament Admin Access**: Removed admin password from tournament and allow admin key users access - COMPLETED (Aug 2025)
 - **Slot Picker Component**: Added interactive slot picker with 3D card-flip animations, provider filtering, spacebar controls, and seamless integration with existing slot database (Aug 2025)
 - **Live Hunts UI Enhancement**: Removed OBS link and preview buttons from live hunts page as requested, improved status display system with proper color coding for COLLECTING/PLAYING/COMPLETED states (Aug 2025)
 - **New Latest Hunt OBS Overlay**: Created /latest-hunt-overlay route with comprehensive display matching reference image - shows hunt stats (Total Win, Best Win, Best Multi, Bonuses Played), next bonus highlight, and complete slots table with NEXT/WAITING status indicators (Aug 2025)
