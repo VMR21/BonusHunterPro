@@ -74,32 +74,23 @@ export default function HuntDetailPage() {
     },
   });
 
-  // Payout mutation
+  // Payout mutation  
   const payoutMutation = useMutation({
     mutationFn: async ({ bonusId, winAmount }: { bonusId: string; winAmount: number }) => {
-      const response = await fetch(`/api/bonuses/${bonusId}/payout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ winAmount }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to record payout' }));
-        throw new Error(errorData.message || 'Failed to record payout');
-      }
-      
+      const response = await apiRequest("POST", `/api/bonuses/${bonusId}/payout`, { winAmount });
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/hunts/${id}/bonuses`] });
       queryClient.invalidateQueries({ queryKey: [`/api/hunts/${id}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/hunts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/live-hunts"] });
       setShowPayoutModal(false);
       setSelectedBonus(null);
       setWinAmount("");
       toast({
-        title: "Payout Recorded",
+        title: "Payout Recorded", 
         description: "Bonus payout and multiplier have been calculated",
         variant: "default",
       });
@@ -114,7 +105,7 @@ export default function HuntDetailPage() {
   });
 
   const handleBonusClick = (bonus: Bonus) => {
-    if (hunt.isPlaying && !bonus.isPlayed) {
+    if (hunt?.isPlaying && !bonus.isPlayed) {
       setSelectedBonus(bonus);
       setWinAmount("");
       setShowPayoutModal(true);
