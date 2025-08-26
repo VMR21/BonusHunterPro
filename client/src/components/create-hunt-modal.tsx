@@ -48,9 +48,11 @@ export function CreateHuntModal({ open, onOpenChange }: CreateHuntModalProps) {
         isPublic: false,
       });
     } catch (error) {
+      console.error('Hunt creation error:', error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to create hunt. Please try again.";
       toast({
         title: "Error",
-        description: "Failed to create hunt. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }

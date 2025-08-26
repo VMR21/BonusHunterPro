@@ -8,17 +8,12 @@ async function throwIfResNotOk(res: Response) {
 }
 
 export async function apiRequest(
+  method: string,
   url: string,
-  options?: {
-    method?: string;
-    body?: string;
-    headers?: Record<string, string>;
-  }
+  body?: any
 ): Promise<Response> {
-  const method = options?.method || "GET";
   const headers: Record<string, string> = {
-    ...options?.headers,
-    ...(options?.body ? { "Content-Type": "application/json" } : {}),
+    ...(body ? { "Content-Type": "application/json" } : {}),
   };
   
   // Add Bearer token for authenticated requests
@@ -30,7 +25,7 @@ export async function apiRequest(
   const res = await fetch(url, {
     method,
     headers,
-    body: options?.body,
+    body: body ? JSON.stringify(body) : undefined,
     credentials: "include",
   });
 
