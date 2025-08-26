@@ -14,10 +14,9 @@ export function Navigation() {
 
   // Navigation items based on authentication status
   const navItems = [
-    { path: "/", label: "Hunts", icon: Trophy },
+    { path: "/", label: "My Hunts", icon: Trophy },
     { path: "/live", label: "Live Hunts", icon: Users },
     ...(isAuthenticated ? [
-      { path: "/my-hunts", label: "My Hunts", icon: Trophy },
       { path: "/obs", label: "OBS Overlay", icon: Eye },
       // Only show Admin Keys for GambiZard admin
       ...(adminKey === "GZ-239-2932-92302" ? [
