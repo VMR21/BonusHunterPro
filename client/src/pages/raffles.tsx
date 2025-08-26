@@ -364,8 +364,8 @@ export default function RafflesPage() {
                         <div>
                           <CardTitle className="flex items-center gap-2">
                             {raffle.title}
-                            <Badge className={`${getStatusColor(raffle.status, raffle.chatConnected)} text-white`}>
-                              {getStatusText(raffle.status, raffle.chatConnected)}
+                            <Badge className={`${getStatusColor(raffle.status, raffle.chatConnected ?? false)} text-white`}>
+                              {getStatusText(raffle.status, raffle.chatConnected ?? false)}
                             </Badge>
                           </CardTitle>
                           <p className="text-muted-foreground mt-1">{raffle.description}</p>
@@ -580,7 +580,7 @@ export default function RafflesPage() {
                               </div>
                             </div>
                             <span className="text-sm text-muted-foreground">
-                              {new Date(entry.createdAt).toLocaleTimeString()}
+                              {entry.createdAt ? new Date(entry.createdAt).toLocaleTimeString() : ""}
                             </span>
                           </div>
                           {entry.message && (
