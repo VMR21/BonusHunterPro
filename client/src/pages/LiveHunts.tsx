@@ -4,22 +4,23 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye, TrendingUp, User } from "lucide-react";
 import { Link } from "wouter";
-// Import a simple currency formatter
+import type { HuntWithAdmin } from "@shared/schema";
+
+// Simple currency formatter
 const formatCurrency = (amount: number, currency: string) => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency,
   }).format(amount);
 };
-import type { HuntWithUser } from "@shared/schema";
 
 export default function LiveHunts() {
-  const { data: liveHunts = [], isLoading } = useQuery<HuntWithUser[]>({
+  const { data: liveHunts = [], isLoading } = useQuery<HuntWithAdmin[]>({
     queryKey: ["/api/live-hunts"],
     refetchInterval: 5000, // Refresh every 5 seconds for live updates
   });
 
-  const { data: allHunts = [] } = useQuery<HuntWithUser[]>({
+  const { data: allHunts = [] } = useQuery<HuntWithAdmin[]>({
     queryKey: ["/api/hunts-with-users"],
   });
 
@@ -58,30 +59,31 @@ export default function LiveHunts() {
         </div>
       )}
 
-      {/* Recent Hunts Section */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-white">Recent Hunts</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {allHunts.slice(0, 12).map((hunt) => (
-            <HuntCard key={hunt.id} hunt={hunt} />
-          ))}
+      {/* All Hunts Section */}
+      {allHunts.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-white">All Recent Hunts</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {allHunts.map((hunt) => (
+              <HuntCard key={hunt.id} hunt={hunt} />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {allHunts.length === 0 && liveHunts.length === 0 && (
-        <div className="text-center py-12">
-          <h3 className="text-lg font-medium text-white mb-2">No hunts available</h3>
-          <p className="text-white/60 mb-4">Be the first to start a bonus hunt!</p>
-          <Link href="/create-hunt">
-            <Button>Start Your First Hunt</Button>
-          </Link>
+      {/* Empty State */}
+      {liveHunts.length === 0 && allHunts.length === 0 && (
+        <div className="text-center py-20">
+          <Eye className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+          <h2 className="text-2xl font-semibold text-white mb-2">No hunts yet</h2>
+          <p className="text-gray-400">Be the first to start a bonus hunt!</p>
         </div>
       )}
     </div>
   );
 }
 
-function LiveHuntCard({ hunt }: { hunt: HuntWithUser }) {
+function LiveHuntCard({ hunt }: { hunt: HuntWithAdmin }) {
   return (
     <Card className="relative overflow-hidden border-red-500/50 bg-red-950/20">
       <div className="absolute top-2 right-2">
@@ -90,10 +92,10 @@ function LiveHuntCard({ hunt }: { hunt: HuntWithUser }) {
         </Badge>
       </div>
       <CardHeader>
-        <CardTitle className="text-lg">{hunt.title}</CardTitle>
+        <CardTitle className="text-lg pr-12">{hunt.title}</CardTitle>
         <CardDescription className="flex items-center gap-2">
           <User className="w-4 h-4" />
-          {hunt.user.name}
+          {hunt.adminDisplayName}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -113,7 +115,7 @@ function LiveHuntCard({ hunt }: { hunt: HuntWithUser }) {
             {hunt.status}
           </Badge>
         </div>
-        <Link href={`/hunt/${hunt.id}`}>
+        <Link href={`/hunts/${hunt.id}`}>
           <Button className="w-full" size="sm">
             <Eye className="w-4 h-4 mr-2" />
             Watch Live
@@ -124,14 +126,14 @@ function LiveHuntCard({ hunt }: { hunt: HuntWithUser }) {
   );
 }
 
-function HuntCard({ hunt }: { hunt: HuntWithUser }) {
+function HuntCard({ hunt }: { hunt: HuntWithAdmin }) {
   return (
     <Card className="hover:bg-white/5 transition-colors">
       <CardHeader>
         <CardTitle className="text-lg">{hunt.title}</CardTitle>
         <CardDescription className="flex items-center gap-2">
           <User className="w-4 h-4" />
-          {hunt.user.name}
+          {hunt.adminDisplayName}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -159,7 +161,7 @@ function HuntCard({ hunt }: { hunt: HuntWithUser }) {
             {hunt.status}
           </Badge>
         </div>
-        <Link href={`/hunt/${hunt.id}`}>
+        <Link href={`/hunts/${hunt.id}`}>
           <Button variant="outline" className="w-full" size="sm">
             <TrendingUp className="w-4 h-4 mr-2" />
             View Hunt

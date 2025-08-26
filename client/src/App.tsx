@@ -13,6 +13,7 @@ import LatestHuntPage from "@/pages/latest-hunt";
 import PublicHuntPage from "@/pages/public-hunt";
 import LiveHunts from "@/pages/LiveHunts";
 import MyHunts from "@/pages/MyHunts";
+import AdminKeys from "@/pages/AdminKeys";
 import Profile from "@/pages/Profile";
 import NotFound from "@/pages/not-found";
 
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/" component={HuntsPage} />
       <Route path="/live" component={LiveHunts} />
       <Route path="/my-hunts" component={MyHunts} />
+      <Route path="/admin-keys" component={AdminKeys} />
       <Route path="/profile" component={Profile} />
       <Route path="/hunts/:id" component={HuntDetailPage} />
       <Route path="/admin" component={AdminPage} />

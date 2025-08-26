@@ -11,7 +11,7 @@ export default function MyHunts() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const { isAuthenticated, adminDisplayName } = useAuth();
   
-  const { data: hunts, isLoading } = useQuery({
+  const { data: hunts, isLoading } = useQuery<Hunt[]>({
     queryKey: ["/api/my-hunts"],
     enabled: isAuthenticated,
   });

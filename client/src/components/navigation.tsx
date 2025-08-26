@@ -20,6 +20,7 @@ export function Navigation() {
       { path: "/my-hunts", label: "My Hunts", icon: Trophy },
       { path: "/obs", label: "OBS Overlay", icon: Eye },
     ] : []),
+    { path: "/admin-keys", label: "Admin Keys", icon: Key },
   ];
 
   return (

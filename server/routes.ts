@@ -378,6 +378,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin Key Management Routes
+  app.get("/api/admin/keys", async (req, res) => {
+    try {
+      const adminKeys = await storage.getAllAdminKeys();
+      res.json(adminKeys);
+    } catch (error) {
+      console.error('Error fetching admin keys:', error);
+      res.status(500).json({ error: "Failed to fetch admin keys" });
+    }
+  });
+
+  app.post("/api/admin/keys", async (req, res) => {
+    try {
+      const { keyValue, displayName } = req.body;
+      
+      if (!keyValue || !displayName) {
+        return res.status(400).json({ error: "Key value and display name are required" });
+      }
+
+      // Check if key already exists
+      const existingKey = await storage.getAdminKeyByValue(keyValue);
+      if (existingKey) {
+        return res.status(400).json({ error: "Admin key already exists" });
+      }
+
+      const adminKey = await storage.createAdminKey({
+        keyValue,
+        displayName,
+        createdAt: new Date(),
+      });
+
+      res.status(201).json(adminKey);
+    } catch (error) {
+      console.error('Error creating admin key:', error);
+      res.status(500).json({ error: "Failed to create admin key" });
+    }
+  });
+
+  app.delete("/api/admin/keys/:id", async (req, res) => {
+    try {
+      const adminKey = await storage.getAdminKeyById(req.params.id);
+      if (!adminKey) {
+        return res.status(404).json({ error: "Admin key not found" });
+      }
+
+      await storage.deleteAdminKey(req.params.id);
+      res.json({ message: "Admin key deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting admin key:', error);
+      res.status(500).json({ error: "Failed to delete admin key" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

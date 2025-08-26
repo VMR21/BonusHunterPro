@@ -27,6 +27,7 @@ export interface IStorage {
   getAdminKeyById(id: string): Promise<AdminKey | undefined>;
   createAdminKey(adminKey: InsertAdminKey): Promise<AdminKey>;
   getAllAdminKeys(): Promise<AdminKey[]>;
+  deleteAdminKey(id: string): Promise<boolean>;
 
   // Admin Sessions
   createAdminSession(adminKeyId: string, sessionToken: string, expiresAt: Date): Promise<AdminSession>;
@@ -103,7 +104,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllAdminKeys(): Promise<AdminKey[]> {
-    return await db.select().from(adminKeys).where(eq(adminKeys.isActive, true)).orderBy(asc(adminKeys.keyName));
+    return await db.select().from(adminKeys).orderBy(asc(adminKeys.displayName));
+  }
+
+  async deleteAdminKey(id: string): Promise<boolean> {
+    const result = await db.delete(adminKeys).where(eq(adminKeys.id, id));
+    return result.rowCount > 0;
   }
 
   // Admin Session methods
