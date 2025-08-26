@@ -14,11 +14,11 @@ export async function apiRequest(
 ): Promise<Response> {
   const headers: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
   
-  // Add API key for admin routes
+  // Add Bearer token for admin routes
   if (url.includes('/admin/') || url.includes('/api/admin/')) {
-    const apiKey = localStorage.getItem('bh_api_key');
-    if (apiKey) {
-      headers['x-api-key'] = apiKey;
+    const sessionToken = localStorage.getItem('admin_session_token');
+    if (sessionToken) {
+      headers['Authorization'] = `Bearer ${sessionToken}`;
     }
   }
 
@@ -39,7 +39,19 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    const url = queryKey.join("/") as string;
+    const headers: Record<string, string> = {};
+    
+    // Add Bearer token for admin routes
+    if (url.includes('/admin/') || url.includes('/api/admin/')) {
+      const sessionToken = localStorage.getItem('admin_session_token');
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+      }
+    }
+
+    const res = await fetch(url, {
+      headers,
       credentials: "include",
     });
 
