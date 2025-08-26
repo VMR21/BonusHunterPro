@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Currency } from "@/lib/currency";
 import type { Bonus } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function HuntDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -39,19 +40,7 @@ export default function HuntDetailPage() {
   // Edit bet amount mutation
   const editBetMutation = useMutation({
     mutationFn: async ({ bonusId, betAmount }: { bonusId: string; betAmount: string }) => {
-      const response = await fetch(`/api/bonuses/${bonusId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ betAmount }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to update bet amount' }));
-        throw new Error(errorData.message || 'Failed to update bet amount');
-      }
-      
+      const response = await apiRequest("PUT", `/api/bonuses/${bonusId}`, { betAmount });
       return response.json();
     },
     onSuccess: () => {
