@@ -2,7 +2,7 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { hunts, bonuses, slotDatabase, meta } from "@shared/schema";
 import type { Hunt, InsertHunt, Bonus, InsertBonus, Slot, InsertSlot, Meta } from "@shared/schema";
-import { eq, desc, asc } from "drizzle-orm";
+import { eq, desc, asc, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import fs from "fs";
 import path from "path";
@@ -211,7 +211,8 @@ export class SQLiteStorage implements IStorage {
           try {
             await this.createSlot(slot);
           } catch (error) {
-            // Skip duplicates
+            // Skip duplicates or other errors
+            console.log(`Skipped slot: ${slot.name} - ${error instanceof Error ? error.message : 'Unknown error'}`);
           }
         }
       }
@@ -221,7 +222,7 @@ export class SQLiteStorage implements IStorage {
   // Meta
   async getMeta(key: string): Promise<string | undefined> {
     const result = await db.select().from(meta).where(eq(meta.key, key)).limit(1);
-    return result[0]?.value;
+    return result[0]?.value ?? undefined;
   }
 
   async setMeta(key: string, value: string): Promise<void> {
@@ -249,6 +250,6 @@ export const storage = new SQLiteStorage();
       }
     }
   } catch (error) {
-    console.log('Slot database initialization skipped:', error.message);
+    console.log('Slot database initialization skipped:', error instanceof Error ? error.message : 'Unknown error');
   }
 })();
