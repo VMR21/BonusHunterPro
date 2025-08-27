@@ -30,12 +30,16 @@ export default function SlotPickerPage() {
     selectedProviders.size === 0 || selectedProviders.has(slot.provider)
   );
 
-  // Initialize with all providers selected
-  useEffect(() => {
-    if (providers.length > 0 && selectedProviders.size === 0) {
-      setSelectedProviders(new Set(providers));
-    }
-  }, [providers, selectedProviders.size]);
+// Initialize with all providers selected (run only once)
+const [bootstrapped, setBootstrapped] = useState(false);
+
+useEffect(() => {
+  if (!bootstrapped && providers.length > 0) {
+    setSelectedProviders(new Set(providers));
+    setBootstrapped(true);
+  }
+}, [providers, bootstrapped]);
+
 
   const toggleProvider = (provider: string) => {
     const newSelected = new Set(selectedProviders);
