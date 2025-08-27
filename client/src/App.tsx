@@ -23,6 +23,7 @@ import Raffles from "@/pages/raffles";
 import RaffleOverlay from "@/pages/raffle-overlay";
 import RaffleCommandPage from "@/pages/raffle-command";
 import OBSOverlaysPage from "@/pages/obs-overlays";
+import BottomBarOverlay from "@/pages/bottom-bar-overlay";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -46,6 +47,7 @@ function Router() {
       <Route path="/obs-overlay/:id" component={LiveOBSOverlay} />
       <Route path="/live-obs-overlay" component={LiveOBSOverlay} />
       <Route path="/latest-hunt-overlay" component={LatestHuntOverlay} />
+      <Route path="/bottom-bar-overlay" component={BottomBarOverlay} />
       <Route path="/live-bonus-hunt" component={OBSLiveBonusesPage} />
       <Route path="/latest-hunt" component={LatestHuntPage} />
       <Route path="/public/:token" component={PublicHuntPage} />
@@ -62,6 +64,7 @@ function App() {
           <Switch>
             <Route path="/obs*" component={() => <Router />} />
             <Route path="/latest-hunt-overlay" component={() => <Router />} />
+            <Route path="/bottom-bar-overlay" component={() => <Router />} />
             <Route path="/live-bonus-hunt" component={() => <Router />} />
             <Route path="/public*" component={() => <Router />} />
             <Route>

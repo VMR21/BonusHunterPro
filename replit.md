@@ -65,6 +65,7 @@ A comprehensive bonus hunting platform for slot machine enthusiasts and streamer
 - **Edit Functionality**: Edit bet amounts and hunt details without restrictions
 
 ## Recent Changes
+- **OBS Overlay Interface Redesign**: Complete redesign of OBS overlay management with two overlay types - "All In One" (existing /latest-hunt-overlay) and new "Bottom Bar" overlay matching user's design specifications with slot info, hunting data, and slot list in horizontal layout. Removed raffle functionality as requested. Fixed infinite loop issues in overlay preview system (Aug 2025)
 - **Tournament System Added**: Created comprehensive tournament bracket system with 4, 8, 16, and 32 player support, admin password protection, automatic winner advancement, and beautiful card-based UI with gradient styling (Aug 2025)
 - **Tournament Admin Access**: Removed admin password from tournament and allow admin key users access - COMPLETED (Aug 2025)
 - **Tournament Branding Update**: Changed tournament title from "ProjectGamba Tournament" to "Slot Tournament" as requested (Aug 2025)

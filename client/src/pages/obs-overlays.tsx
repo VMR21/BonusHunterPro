@@ -34,15 +34,18 @@ export default function OBSOverlaysPage() {
           const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           return bTime - aTime;
         })[0] || huntsData[0];
-      setCurrentHunt(latestHunt);
+      
+      if (!currentHunt || currentHunt.id !== latestHunt.id) {
+        setCurrentHunt(latestHunt);
+      }
     }
-  }, [huntsData]);
+  }, [huntsData, currentHunt]);
 
   useEffect(() => {
-    if (bonusesData) {
+    if (bonusesData && JSON.stringify(bonusesData) !== JSON.stringify(currentBonuses)) {
       setCurrentBonuses(bonusesData);
     }
-  }, [bonusesData]);
+  }, [bonusesData, currentBonuses]);
 
   const getNextBonus = () => {
     return currentBonuses.find(b => !b.isPlayed);
@@ -278,37 +281,23 @@ export default function OBSOverlaysPage() {
               variant="outline" 
               size="sm"
               asChild
-              data-testid="button-latest-overlay"
+              data-testid="button-all-in-one"
             >
-              <a href={overlayUrls.latest} target="_blank" rel="noopener noreferrer">
+              <a href="/latest-hunt-overlay" target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-4 h-4 mr-1" />
-                Latest Hunt Overlay
+                All In One
               </a>
             </Button>
-            
-            {overlayUrls.current && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                asChild
-                data-testid="button-current-overlay"
-              >
-                <a href={overlayUrls.current} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="w-4 h-4 mr-1" />
-                  Current Hunt
-                </a>
-              </Button>
-            )}
             
             <Button 
               variant="outline" 
               size="sm"
               asChild
-              data-testid="button-live-bonuses"
+              data-testid="button-bottom-bar"
             >
-              <a href={overlayUrls.liveBonuses} target="_blank" rel="noopener noreferrer">
+              <a href="/bottom-bar-overlay" target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-4 h-4 mr-1" />
-                Live Bonuses
+                Bottom Bar
               </a>
             </Button>
           </div>
