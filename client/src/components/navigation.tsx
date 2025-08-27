@@ -20,7 +20,7 @@ export function Navigation() {
     { path: "/tournament", label: "Tournament", icon: Crown },
     { path: "/raffles", label: "Raffles", icon: Dice6 },
     ...(isAuthenticated ? [
-      { path: "/latest-hunt-overlay", label: "OBS Overlay", icon: Eye },
+      { path: "/obs-overlays", label: "OBS Overlays", icon: Eye },
       // Only show Admin Keys for GambiZard admin
       ...(adminKey === "GZ-239-2932-92302" ? [
         { path: "/admin-keys", label: "Admin Keys", icon: Key },

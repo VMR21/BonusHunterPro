@@ -22,6 +22,7 @@ import Profile from "@/pages/Profile";
 import Raffles from "@/pages/raffles";
 import RaffleOverlay from "@/pages/raffle-overlay";
 import RaffleCommandPage from "@/pages/raffle-command";
+import OBSOverlaysPage from "@/pages/obs-overlays";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/slot-picker" component={SlotPickerPage} />
       <Route path="/tournament" component={TournamentPage} />
       <Route path="/raffles" component={Raffles} />
+      <Route path="/obs-overlays" component={OBSOverlaysPage} />
       <Route path="/raffle-overlay/:id" component={RaffleOverlay} />
       <Route path="/raffle/:id" component={RaffleCommandPage} />
 
