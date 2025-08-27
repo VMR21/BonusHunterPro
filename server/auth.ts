@@ -23,7 +23,7 @@ export async function createAdminSession(adminKeyValue: string): Promise<string 
 }
 
 // Check if admin session is valid
-export async function checkAdminSession(sessionToken: string): Promise<{ valid: boolean; adminKey?: string; adminDisplayName?: string }> {
+export async function checkAdminSession(sessionToken: string): Promise<{ valid: boolean; adminKey?: string; adminDisplayName?: string; kickUsername?: string }> {
   const session = await storage.getAdminSession(sessionToken);
   
   if (!session || session.expiresAt < new Date()) {
@@ -42,7 +42,8 @@ export async function checkAdminSession(sessionToken: string): Promise<{ valid: 
   return { 
     valid: true, 
     adminKey: adminKey.keyValue,
-    adminDisplayName: adminKey.displayName
+    adminDisplayName: adminKey.displayName,
+    kickUsername: adminKey.kickUsername
   };
 }
 

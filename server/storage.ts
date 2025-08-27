@@ -680,6 +680,10 @@ export class DatabaseStorage implements IStorage {
     return winners;
   }
 
+  async clearRaffleEntries(raffleId: string): Promise<void> {
+    await db.delete(raffleEntries).where(eq(raffleEntries.raffleId, raffleId));
+  }
+
 
 }
 

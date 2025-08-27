@@ -43,7 +43,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ 
       isAdmin: sessionCheck.valid,
       adminDisplayName: sessionCheck.adminDisplayName,
-      adminKey: sessionCheck.adminKey
+      adminKey: sessionCheck.adminKey,
+      kickUsername: sessionCheck.kickUsername
     });
   });
 
@@ -679,6 +680,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error ending raffle:", error);
       res.status(500).json({ message: "Failed to end raffle" });
+    }
+  });
+
+  app.delete("/api/raffles/:id/entries", requireAdmin, async (req: AuthenticatedRequest, res) => {
+    try {
+      await storage.clearRaffleEntries(req.params.id);
+      res.json({ message: "All raffle entries cleared successfully" });
+    } catch (error) {
+      console.error("Error clearing raffle entries:", error);
+      res.status(500).json({ message: "Failed to clear entries" });
     }
   });
 

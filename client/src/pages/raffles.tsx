@@ -23,7 +23,7 @@ export default function RafflesPage() {
   const [newRaffle, setNewRaffle] = useState<Partial<InsertRaffle>>({
     title: "",
     description: "",
-    keyword: "!raffle",
+    keyword: "viewers",
     kickUsername: "",
     winnerCount: 1,
     subscribers: false,
@@ -505,6 +505,22 @@ export default function RafflesPage() {
                             >
                               <ExternalLink className="w-4 h-4 mr-1" />
                               Kick Chat
+                            </a>
+                          </Button>
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            asChild
+                            data-testid={`button-command-interface-${raffle.id}`}
+                          >
+                            <a
+                              href={`/raffle/${raffle.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <MessageCircle className="w-4 h-4 mr-1" />
+                              Command Interface
                             </a>
                           </Button>
                         </div>

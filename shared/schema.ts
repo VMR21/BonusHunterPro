@@ -56,6 +56,7 @@ export const adminKeys = pgTable("admin_keys", {
   keyName: text("key_name").notNull().unique(), // e.g., "admin1", "admin2", "streamer1"
   keyValue: text("key_value").notNull().unique(), // The actual admin key
   displayName: text("display_name").notNull(), // e.g., "Main Admin", "Streamer Account"
+  kickUsername: text("kick_username"), // Kick.com username associated with this admin key
   isActive: boolean("is_active").notNull().default(true),
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow(),
