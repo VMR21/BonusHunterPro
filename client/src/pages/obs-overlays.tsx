@@ -281,23 +281,11 @@ export default function OBSOverlaysPage() {
               variant="outline" 
               size="sm"
               asChild
-              data-testid="button-all-in-one"
+              data-testid="button-obs-overlay"
             >
               <a href="/latest-hunt-overlay" target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-4 h-4 mr-1" />
-                All In One
-              </a>
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              size="sm"
-              asChild
-              data-testid="button-bottom-bar"
-            >
-              <a href="/bottom-bar-overlay" target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="w-4 h-4 mr-1" />
-                Bottom Bar
+                OBS Overlay
               </a>
             </Button>
           </div>
