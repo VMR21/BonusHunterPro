@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BonusHunter Pro - Track Your Bonus Hunts</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#6366F1',
+                        'secondary': '#8B5CF6',
+                        'dark': '#0F0F23',
+                        'dark-purple': '#1E1B4B',
+                        'medium-purple': '#2D1B69',
+                        'accent': '#06B6D4'
+                    },
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="bg-dark text-gray-100 font-inter">
+    <!-- @COMPONENT: NavigationHeader -->
+    <header class="bg-dark-purple/80 backdrop-blur-sm border-b border-purple-800/30 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-8">
+                    <div class="flex items-center">
+                        <i class="fas fa-dice text-primary text-2xl mr-3"></i>
+                        <h1 class="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                            BonusHunter Pro
+                        </h1>
+                    </div>
+                    <nav class="hidden md:flex space-x-6">
+                        <button onclick="showSection('hunts')" class="nav-btn text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/10" data-section="hunts">
+                            Hunts
+                        </button>
+                        <button onclick="showSection('admin')" class="nav-btn text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/10" data-section="admin">
+                            Admin
+                        </button>
+                        <button onclick="showSection('obs')" class="nav-btn text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/10" data-section="obs">
+                            OBS Overlay
+                        </button>
+                    </nav>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm text-gray-400">
+                        <span data-bind="user.huntsCount">11,453</span> Hunts Created
+                    </div>
+                    <button class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-plus mr-2"></i>New Hunt
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- @END_COMPONENT: NavigationHeader -->
+
+    <!-- @COMPONENT: MainContent -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Hunts List Section -->
+        <div id="hunts-section" class="section">
+            <!-- @COMPONENT: HuntsOverview -->
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-3xl font-bold text-white">Your Bonus Hunts</h2>
+                    <div class="flex space-x-3">
+                        <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-download mr-2"></i>Export
+                        </button>
+                        <button onclick="openCreateHuntModal()" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Create Hunt
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-dark-purple/50 border border-purple-800/30 rounded-xl p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm font-medium">Total Hunts</p>
+                                <p class="text-2xl font-bold text-white" data-bind="stats.totalHunts">24</p>
+                            </div>
+                            <div class="bg-primary/20 p-3 rounded-lg">
+                                <i class="fas fa-list-ul text-primary text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-dark-purple/50 border border-purple-800/30 rounded-xl p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm font-medium">Active Hunts</p>
+                                <p class="text-2xl font-bold text-green-400" data-bind="stats.activeHunts">3</p>
+                            </div>
+                            <div class="bg-green-500/20 p-3 rounded-lg">
+                                <i class="fas fa-play text-green-400 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-dark-purple/50 border border-purple-800/30 rounded-xl p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm font-medium">Total Spent</p>
+                                <p class="text-2xl font-bold text-yellow-400" data-bind="stats.totalSpent">$2,450</p>
+                            </div>
+                            <div class="bg-yellow-500/20 p-3 rounded-lg">
+                                <i class="fas fa-dollar-sign text-yellow-400 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-dark-purple/50 border border-purple-800/30 rounded-xl p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm font-medium">Total Won</p>
+                                <p class="text-2xl font-bold text-green-400" data-bind="stats.totalWon">$3,120</p>
+                            </div>
+                            <div class="bg-green-500/20 p-3 rounded-lg">
+                                <i class="fas fa-trophy text-green-400 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hunts Table -->
+                <div class="bg-dark-purple/50 border border-purple-800/30 rounded-xl overflow-hidden">
+                    <div class="p-6 border-b border-purple-800/30">
+                        <h3 class="text-lg font-semibold text-white">Recent Hunts</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-dark-purple/30">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Casino</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Bonuses</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Start Balance</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">End Balance</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-purple-800/30">
+                                <!-- @MAP: hunts.map(hunt => ( -->
+                                <tr class="hover:bg-white/5 cursor-pointer transition-colors" onclick="showHuntDetail('hunt-1')" data-mock="true">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div>
+                                                <div class="text-sm font-medium text-white" data-bind="hunt.title">Epic Friday Night Hunt</div>
+                                                <div class="text-sm text-gray-400" data-bind="hunt.createdAt">2 hours ago</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300" data-bind="hunt.casino">Stake Casino</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300" data-bind="hunt.bonusCount">16</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-green-400" data-bind="hunt.startBalance">$500.00</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-green-400" data-bind="hunt.endBalance">$420.50</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-500/20 text-yellow-400" data-bind="hunt.status">
+                                            Opening
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button class="text-primary hover:text-primary/80 mr-3">View</button>
+                                        <button class="text-red-400 hover:text-red-300">Delete</button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-white/5 cursor-pointer transition-colors" onclick="showHuntDetail('hunt-2')" data-mock="true">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div>
+                                                <div class="text-sm font-medium text-white" data-bind="hunt.title">Weekend Warriors</div>
+                                                <div class="text-sm text-gray-400" data-bind="hunt.createdAt">1 day ago</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300" data-bind="hunt.casino">LeoVegas</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300" data-bind="hunt.bonusCount">22</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-green-400" data-bind="hunt.startBalance">$300.00</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-red-400" data-bind="hunt.endBalance">$180.25</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-500/20 text-green-400" data-bind="hunt.status">
+                                            Finished
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button class="text-primary hover:text-primary/80 mr-3">View</button>
+                                        <button class="text-red-400 hover:text-red-300">Delete</button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-white/5 cursor-pointer transition-colors" onclick="showHuntDetail('hunt-3')" data-mock="true">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div>
+                                                <div class="text-sm font-medium text-white" data-bind="hunt.title">Big Bass Bonanza Hunt</div>
+                                                <div class="text-sm text-gray-400" data-bind="hunt.createdAt">3 days ago</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300" data-bind="hunt.casino">Pragmatic Casino</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300" data-bind="hunt.bonusCount">8</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-green-400" data-bind="hunt.startBalance">$150.00</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-green-400" data-bind="hunt.endBalance">$245.80</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-500/20 text-blue-400" data-bind="hunt.status">
+                                            Collecting
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button class="text-primary hover:text-primary/80 mr-3">View</button>
+                                        <button class="text-red-400 hover:text-red-300">Delete</button>
+                                    </td>
+                                </tr>
+                                <!-- @END_MAP )) -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: HuntsOverview -->
+
+            <!-- @COMPONENT: HuntDetail -->
+            <div id="hunt-detail" class="hidden">
+                <div class="mb-6">
+                    <button onclick="showSection('hunts')" class="text-primary hover:text-primary/80 mb-4 inline-flex items-center">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Hunts
+                    </button>
+                    <h2 class="text-3xl font-bold text-white">Epic Friday Night Hunt</h2>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Hunt Info Card -->
+                    <div class="lg:col-span-1">
+                        <div class="bg-dark-purple/50 border border-purple-800/30 rounded-xl p-6 mb-6">
+                            <h3 class="text-lg font-semibold text-white mb-4">Bonus Hunt Info</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Name:</span>
+                                    <span class="text-white" data-bind="hunt.title">Epic Friday Night Hunt</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Casino:</span>
+                                    <span class="text-white" data-bind="hunt.casino">Stake Casino</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Start Time:</span>
+                                    <span class="text-white" data-bind="hunt.startTime">22:15 Today</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Start Balance:</span>
+                                    <span class="text-green-400" data-bind="hunt.startBalance">$500.00</span>
+                                </div>
+                                <div class="pt-3 border-t border-purple-800/30">
+                                    <a href="#" class="text-primary hover:text-primary/80 text-sm">
+                                        <i class="fas fa-external-link-alt mr-1"></i>Link to public view
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bonus Stats Card -->
+                        <div class="bg-dark-purple/50 border border-purple-800/30 rounded-xl p-6">
+                            <h3 class="text-lg font-semibold text-white mb-4">Bonus Stats</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Total Bonus:</span>
+                                    <span class="text-white" data-bind="hunt.totalBonus">16</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Avg. Bet:</span>
+                                    <span class="text-white" data-bind="hunt.avgBet">$1.25</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Total Cost:</span>
+                                    <span class="text-white" data-bind="hunt.totalCost">$20.00</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Req. X:</span>
+                                    <span class="text-white" data-bind="hunt.reqX">16.00</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">ROI:</span>
+                                    <span class="text-green-400" data-bind="hunt.roi">+12.5%</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Progress Bar -->
+                            <div class="mt-6">
+                                <div class="flex justify-between text-sm mb-2">
+                                    <span class="text-gray-400">Progress</span>
+                                    <span class="text-white" data-bind="hunt.progress">8/16</span>
+                                </div>
+                                <div class="w-full bg-dark-purple rounded-full h-2">
+                                    <div class="bg-primary h-2 rounded-full" style="width: 50%" data-bind="hunt.progressPercent"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Content Area -->
+                    <div class="lg:col-span-2">
+                        <!-- Provider Distribution Chart -->
+                        <div class="bg-dark-purple/50 border border-purple-800/30 rounded-xl p-6 mb-6">
+                            <h3 class="text-lg font-semibold text-white mb-4">Provider Distribution</h3>
+                            <div class="flex justify-center">
+                                <!-- @FUNCTIONALITY: This canvas should implement a donut chart showing provider distribution -->
+                                <canvas id="providerChart" width="300" height="300" class="max-w-full"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Slots Table -->
+                        <div class="bg-dark-purple/50 border border-purple-800/30 rounded-xl overflow-hidden">
+                            <div class="p-6 border-b border-purple-800/30">
+                                <h3 class="text-lg font-semibold text-white">Bonus Slots</h3>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead class="bg-dark-purple/30">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">#</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Slot</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Provider</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Bet</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">X Win</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Win</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-purple-800/30">
+                                        <!-- @MAP: bonuses.map(bonus => ( -->
+                                        <tr class="hover:bg-white/5 transition-colors" data-mock="true">
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300" data-bind="bonus.index">1</td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="flex items-center">
+                                                    <!-- Slot machine thumbnail image from actual slot games -->
+                                                    <img src="https://mediumrare.imgix.net/8db2a8fe1345b39a2a90e04cdcce1de795a3d3c4116a3b1a05c4485fbed88027?w=60&h=80&fit=min&auto=format" alt="Fire Stampede 2 slot game thumbnail" class="w-8 h-10 rounded mr-3" data-mock-image="true" />
+                                                    <span class="text-white text-sm" data-bind="bonus.slot">Fire Stampede 2</span>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300" data-bind="bonus.provider">Pragmatic Play</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-white" data-bind="bonus.bet">$1.00</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-yellow-400" data-bind="bonus.multiplier">42.5x</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-green-400" data-bind="bonus.win">$42.50</td>
+                                        </tr>
+                                        <tr class="hover:bg-white/5 transition-colors bg-primary/10" data-mock="true">
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300" data-bind="bonus.index">2</td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="flex items-center">
+                                                    <!-- Actual Big Bass Bonanza slot thumbnail -->
+                                                    <img src="https://mediumrare.imgix.net/7f65a3148997321a5a97908745726044e003b310bc0e52a397acef36b525dcbe?w=60&h=80&fit=min&auto=format" alt="Big Bass Reel Repeat slot game thumbnail" class="w-8 h-10 rounded mr-3" data-mock-image="true" />
+                                                    <span class="text-white text-sm" data-bind="bonus.slot">Big Bass Reel Repeat</span>
+                                                    <span class="ml-2 text-xs bg-primary text-white px-2 py-1 rounded">CURRENT</span>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300" data-bind="bonus.provider">Pragmatic Play</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-white" data-bind="bonus.bet">$1.25</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400" data-bind="bonus.multiplier">-</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400" data-bind="bonus.win">-</td>
+                                        </tr>
+                                        <tr class="hover:bg-white/5 transition-colors" data-mock="true">
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300" data-bind="bonus.index">3</td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="flex items-center">
+                                                    <!-- Gates of Olympus slot thumbnail -->
+                                                    <img src="https://mediumrare.imgix.net/2336c6f0f73067111a7940d14b0f62d5b8c0bb08b21baef76c7b4d8c403de21b?w=60&h=80&fit=min&auto=format" alt="Argonauts slot game thumbnail" class="w-8 h-10 rounded mr-3" data-mock-image="true" />
+                                                    <span class="text-white text-sm" data-bind="bonus.slot">Argonauts</span>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300" data-bind="bonus.provider">Pragmatic Play</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-white" data-bind="bonus.bet">$2.00</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400" data-bind="bonus.multiplier">-</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400" data-bind="bonus.win">-</td>
+                                        </tr>
+                                        <!-- @END_MAP )) -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: HuntDetail -->
+        </div>
+
+        <!-- Admin Section -->
+        <div id="admin-section" class="section hidden">
+            <!-- @COMPONENT: AdminPanel -->
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-white mb-6">Admin Panel</h2>
+                
+                <!-- API Key Authentication -->
+                <div id="api-key-form" class="bg-dark-purple/50 border border-purple-800/30 rounded-xl p-6 mb-8">
+                    <h3 class="text-lg font-semibold text-white mb-4">API Authentication</h3>
+                    <div class="flex space-x-4">
+                        <input type="password" id="api-key-input" placeholder="Enter API Key" class="flex-1 bg-dark border border-purple-800/30 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                        <button onclick="authenticateAPI()" class="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg transition-colors">
+                            Authenticate
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Admin Controls -->
+                <div id="admin-controls" class="hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <button onclick="openCreateHuntModal()" class="bg-green-600 hover:bg-green-700 text-white p-6 rounded-xl transition-colors text-center">
+                            <i class="fas fa-plus text-2xl mb-2"></i>
+                            <div class="font-semibold">Create Hunt</div>
+                        </button>
+                        <button onclick="openAddBonusModal()" class="bg-blue-600 hover:bg-blue-700 text-white p-6 rounded-xl transition-colors text-center">
+                            <i class="fas fa-gift text-2xl mb-2"></i>
+                            <div class="font-semibold">Add Bonus</div>
+                        </button>
+                        <button onclick="startOpening()" class="bg-yellow-600 hover:bg-yellow-700 text-white p-6 rounded-xl transition-colors text-center">
+                            <i class="fas fa-play text-2xl mb-2"></i>
+                            <div class="font-semibold">Start Opening</div>
+                        </button>
+                        <button onclick="openSetPayoutModal()" class="bg-purple-600 hover:bg-purple-700 text-white p-6 rounded-xl transition-colors text-center">
+                            <i class="fas fa-money-bill text-2xl mb-2"></i>
+                            <div class="font-semibold">Set Payout</div>
+                        </button>
+                    </div>
+
+                    <!-- Active Hunt Management -->
+                    <div class="bg-dark-purple/50 border border-purple-800/30 rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-white mb-4">Current Hunt Management</h3>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-gray-400 text-sm font-medium mb-2">Select Hunt</label>
+                                <select class="w-full bg-dark border border-purple-800/30 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                    <option data-mock="true">Epic Friday Night Hunt</option>
+                                    <option data-mock="true">Weekend Warriors</option>
+                                    <option data-mock="true">Big Bass Bonanza Hunt</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-gray-400 text-sm font-medium mb-2">Update Spent Amount</label>
+                                <div class="flex space-x-2">
+                                    <input type="number" placeholder="Amount spent" class="flex-1 bg-dark border border-purple-800/30 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                    <button class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition-colors">
+                                        Update
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: AdminPanel -->
+        </div>
+
+        <!-- OBS Overlay Section -->
+        <div id="obs-section" class="section hidden">
+            <!-- @COMPONENT: OBSOverlay -->
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-white mb-6">OBS Overlay Preview</h2>
+                
+                <!-- OBS V2 Overlay -->
+                <div class="bg-dark-purple/30 border border-purple-800/30 rounded-xl p-8 max-w-4xl mx-auto">
+                    <!-- Header -->
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-white bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                            BONUSHUNT INFO
+                        </h3>
+                        <div class="flex items-center space-x-4">
+                            <div class="bg-dark-purple rounded-lg px-4 py-2">
+                                <span class="text-gray-400 text-sm">Progress:</span>
+                                <span class="text-white ml-2" data-bind="hunt.progressText">8/16</span>
+                            </div>
+                            <div class="w-32 bg-dark-purple rounded-full h-3">
+                                <div class="bg-gradient-to-r from-primary to-secondary h-3 rounded-full" style="width: 50%" data-bind="hunt.progressBar"></div>
+                            </div>
+                            <span class="text-white font-semibold" data-bind="hunt.progressPercent">50%</span>
+                        </div>
+                    </div>
+
+                    <!-- Stats Tiles -->
+                    <div class="grid grid-cols-4 gap-4 mb-6">
+                        <div class="bg-gradient-to-br from-blue-600/20 to-blue-800/20 border border-blue-500/30 rounded-lg p-4 text-center">
+                            <div class="text-blue-400 text-sm font-medium mb-1">B.E.X</div>
+                            <div class="text-white text-xl font-bold" data-bind="obs.bex">16.00</div>
+                        </div>
+                        <div class="bg-gradient-to-br from-green-600/20 to-green-800/20 border border-green-500/30 rounded-lg p-4 text-center">
+                            <div class="text-green-400 text-sm font-medium mb-1">TARGET</div>
+                            <div class="text-white text-xl font-bold" data-bind="obs.target">$320</div>
+                        </div>
+                        <div class="bg-gradient-to-br from-yellow-600/20 to-yellow-800/20 border border-yellow-500/30 rounded-lg p-4 text-center">
+                            <div class="text-yellow-400 text-sm font-medium mb-1">AVG X</div>
+                            <div class="text-white text-xl font-bold" data-bind="obs.avgX">21.25</div>
+                        </div>
+                        <div class="bg-gradient-to-br from-purple-600/20 to-purple-800/20 border border-purple-500/30 rounded-lg p-4 text-center">
+                            <div class="text-purple-400 text-sm font-medium mb-1">TOTAL WIN</div>
+                            <div class="text-white text-xl font-bold" data-bind="obs.totalWin">$42.50</div>
+                        </div>
+                    </div>
+
+                    <!-- Best Win & Multi Row -->
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="bg-gradient-to-r from-green-600/20 to-emerald-600/20 border border-green-500/30 rounded-lg p-4">
+                            <div class="text-green-400 text-sm font-medium mb-1">BEST WIN</div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-white text-lg font-bold" data-bind="obs.bestWin">$42.50</span>
+                                <span class="text-gray-400 text-sm" data-bind="obs.bestWinSlot">Fire Stampede 2</span>
+                            </div>
+                        </div>
+                        <div class="bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-500/30 rounded-lg p-4">
+                            <div class="text-yellow-400 text-sm font-medium mb-1">BEST MULTI</div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-white text-lg font-bold" data-bind="obs.bestMulti">42.5x</span>
+                                <span class="text-gray-400 text-sm" data-bind="obs.bestMultiSlot">Fire Stampede 2</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slots Table -->
+                    <div class="bg-dark-purple/50 border border-purple-800/30 rounded-lg overflow-hidden">
+                        <table class="w-full text-sm">
+                            <thead class="bg-dark-purple/70">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">#</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">SLOT</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">BET</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">MULTI</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">WIN</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-purple-800/30">
+                                <!-- @MAP: obsSlots.map(slot => ( -->
+                                <tr class="hover:bg-white/5 transition-colors" data-mock="true">
+                                    <td class="px-4 py-3 text-gray-300" data-bind="slot.index">1</td>
+                                    <td class="px-4 py-3 text-white" data-bind="slot.name">Fire Stampede 2</td>
+                                    <td class="px-4 py-3 text-white" data-bind="slot.bet">$1.00</td>
+                                    <td class="px-4 py-3 text-yellow-400" data-bind="slot.multi">42.5x</td>
+                                    <td class="px-4 py-3 text-green-400" data-bind="slot.win">$42.50</td>
+                                </tr>
+                                <tr class="hover:bg-white/5 transition-colors bg-primary/20" data-mock="true">
+                                    <td class="px-4 py-3 text-gray-300" data-bind="slot.index">2</td>
+                                    <td class="px-4 py-3 text-white font-semibold" data-bind="slot.name">Big Bass Reel Repeat</td>
+                                    <td class="px-4 py-3 text-white" data-bind="slot.bet">$1.25</td>
+                                    <td class="px-4 py-3 text-gray-400" data-bind="slot.multi">-</td>
+                                    <td class="px-4 py-3 text-gray-400" data-bind="slot.win">-</td>
+                                </tr>
+                                <tr class="hover:bg-white/5 transition-colors" data-mock="true">
+                                    <td class="px-4 py-3 text-gray-300" data-bind="slot.index">3</td>
+                                    <td class="px-4 py-3 text-white" data-bind="slot.name">Argonauts</td>
+                                    <td class="px-4 py-3 text-white" data-bind="slot.bet">$2.00</td>
+                                    <td class="px-4 py-3 text-gray-400" data-bind="slot.multi">-</td>
+                                    <td class="px-4 py-3 text-gray-400" data-bind="slot.win">-</td>
+                                </tr>
+                                <!-- @END_MAP )) -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Overlay Instructions -->
+                <div class="mt-8 bg-dark-purple/50 border border-purple-800/30 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">OBS Integration Instructions</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="text-white font-medium mb-2">Simple Overlay URL:</h4>
+                            <code class="bg-dark text-green-400 px-3 py-2 rounded text-sm block">
+                                https://your-app.com/overlay.html?id=HUNT_ID
+                            </code>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-medium mb-2">V2 Overlay URL:</h4>
+                            <code class="bg-dark text-green-400 px-3 py-2 rounded text-sm block">
+                                https://your-app.com/obs-v2.html?id=HUNT_ID
+                            </code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: OBSOverlay -->
+        </div>
+    </main>
+    <!-- @END_COMPONENT: MainContent -->
+
+    <!-- @COMPONENT: CreateHuntModal -->
+    <div id="create-hunt-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center">
+        <div class="bg-dark-purple border border-purple-800/30 rounded-xl p-8 w-full max-w-md mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-white">Create New Hunt</h3>
+                <button onclick="closeCreateHuntModal()" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form data-event="submit:createHunt" data-implementation="Should validate form and create hunt via API">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-gray-400 text-sm font-medium mb-2">Hunt Title</label>
+                        <input type="text" placeholder="Enter hunt title" class="w-full bg-dark border border-purple-800/30 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-sm font-medium mb-2">Casino Name</label>
+                        <input type="text" placeholder="Enter casino name" class="w-full bg-dark border border-purple-800/30 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-sm font-medium mb-2">Currency</label>
+                        <select class="w-full bg-dark border border-purple-800/30 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" required>
+                            <option value="USD">USD ($)</option>
+                            <option value="CAD">CAD (C$)</option>
+                            <option value="AUD">AUD (A$)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-sm font-medium mb-2">Starting Balance</label>
+                        <input type="number" step="0.01" placeholder="0.00" class="w-full bg-dark border border-purple-800/30 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-sm font-medium mb-2">Notes (Optional)</label>
+                        <textarea placeholder="Add any notes about this hunt..." class="w-full bg-dark border border-purple-800/30 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary h-20 resize-none"></textarea>
+                    </div>
+                </div>
+                <div class="flex space-x-3 mt-6">
+                    <button type="button" onclick="closeCreateHuntModal()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-1 bg-primary hover:bg-primary/90 text-white py-2 rounded-lg transition-colors">
+                        Create Hunt
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: CreateHuntModal -->
+
+    <!-- @COMPONENT: AddBonusModal -->
+    <div id="add-bonus-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center">
+        <div class="bg-dark-purple border border-purple-800/30 rounded-xl p-8 w-full max-w-md mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-white">Add Bonus</h3>
+                <button onclick="closeAddBonusModal()" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form data-event="submit:addBonus" data-implementation="Should search CSV and auto-fill provider/image">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-gray-400 text-sm font-medium mb-2">Slot Game</label>
+                        <input type="text" placeholder="Search slot games..." list="slot-games" class="w-full bg-dark border border-purple-800/30 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" required>
+                        <datalist id="slot-games">
+                            <option value="Fire Stampede 2">
+                            <option value="Big Bass Reel Repeat">
+                            <option value="Argonauts">
+                            <option value="Sweet Bonanza">
+                            <!-- @IMPLEMENTATION: Load from CSV file -->
+                        </datalist>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-sm font-medium mb-2">Provider</label>
+                        <input type="text" readonly class="w-full bg-gray-700 border border-purple-800/30 text-gray-300 px-4 py-2 rounded-lg" placeholder="Auto-filled from selection">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-sm font-medium mb-2">Bet Amount</label>
+                        <input type="number" step="0.01" placeholder="0.00" class="w-full bg-dark border border-purple-800/30 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-sm font-medium mb-2">Preview</label>
+                        <div class="bg-dark border border-purple-800/30 rounded-lg p-4 flex items-center space-x-3">
+                            <div class="w-12 h-16 bg-gray-700 rounded overflow-hidden">
+                                <!-- @IMPLEMENTATION: Show thumbnail preview when slot selected -->
+                                <img src="" alt="Slot thumbnail" class="w-full h-full object-cover hidden" id="slot-preview">
+                                <div class="w-full h-full flex items-center justify-center text-gray-500 text-xs" id="no-preview">
+                                    No image
+                                </div>
+                            </div>
+                            <div class="flex-1 text-sm text-gray-400">
+                                Select a slot to see preview
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex space-x-3 mt-6">
+                    <button type="button" onclick="closeAddBonusModal()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-1 bg-primary hover:bg-primary/90 text-white py-2 rounded-lg transition-colors">
+                        Add Bonus
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: AddBonusModal -->
+
+    <script>
+        // TODO: Implement business logic, API calls, and state management
+        
+        (() => {
+            // Navigation and UI Management
+            function showSection(sectionName) {
+                // Hide all sections
+                document.querySelectorAll('.section').forEach(section => {
+                    section.classList.add('hidden');
+                });
+                
+                // Show selected section
+                const targetSection = document.getElementById(`${sectionName}-section`);
+                if (targetSection) {
+                    targetSection.classList.remove('hidden');
+                }
+                
+                // Update navigation buttons
+                document.querySelectorAll('.nav-btn').forEach(btn => {
+                    btn.classList.remove('bg-primary/20', 'text-primary');
+                    btn.classList.add('text-gray-300');
+                });
+                
+                const activeBtn = document.querySelector(`[data-section="${sectionName}"]`);
+                if (activeBtn) {
+                    activeBtn.classList.add('bg-primary/20', 'text-primary');
+                    activeBtn.classList.remove('text-gray-300');
+                }
+            }
+            
+            function showHuntDetail(huntId) {
+                document.getElementById('hunt-detail').classList.remove('hidden');
+                document.querySelector('#hunts-section > div:first-child').classList.add('hidden');
+            }
+            
+            // Modal Management
+            function openCreateHuntModal() {
+                document.getElementById('create-hunt-modal').classList.remove('hidden');
+            }
+            
+            function closeCreateHuntModal() {
+                document.getElementById('create-hunt-modal').classList.add('hidden');
+            }
+            
+            function openAddBonusModal() {
+                document.getElementById('add-bonus-modal').classList.remove('hidden');
+            }
+            
+            function closeAddBonusModal() {
+                document.getElementById('add-bonus-modal').classList.add('hidden');
+            }
+            
+            // Admin Functions
+            function authenticateAPI() {
+                const apiKey = document.getElementById('api-key-input').value;
+                if (apiKey) {
+                    localStorage.setItem('bh_api_key', apiKey);
+                    document.getElementById('admin-controls').classList.remove('hidden');
+                    document.getElementById('api-key-form').classList.add('hidden');
+                }
+            }
+            
+            function startOpening() {
+                // TODO: Implement start opening logic
+                alert('Starting hunt opening phase...');
+            }
+            
+            function openSetPayoutModal() {
+                // TODO: Implement set payout modal
+                alert('Set payout modal would open here');
+            }
+            
+            // Provider Distribution Chart
+            function drawProviderChart() {
+                const canvas = document.getElementById('providerChart');
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const radius = 100;
+                const innerRadius = 60;
+                
+                // Sample data
+                const providers = [
+                    { name: 'Pragmatic Play', value: 60, color: '#6366F1' },
+                    { name: 'Hacksaw Gaming', value: 25, color: '#8B5CF6' },
+                    { name: 'Push Gaming', value: 15, color: '#06B6D4' }
+                ];
+                
+                let currentAngle = 0;
+                
+                providers.forEach(provider => {
+                    const sliceAngle = (provider.value / 100) * 2 * Math.PI;
+                    
+                    // Draw outer arc
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+                    ctx.arc(centerX, centerY, innerRadius, currentAngle + sliceAngle, currentAngle, true);
+                    ctx.closePath();
+                    ctx.fillStyle = provider.color;
+                    ctx.fill();
+                    
+                    currentAngle += sliceAngle;
+                });
+                
+                // Draw center circle
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, innerRadius, 0, 2 * Math.PI);
+                ctx.fillStyle = '#1E1B4B';
+                ctx.fill();
+                
+                // Draw center text
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = '16px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText('Providers', centerX, centerY);
+            }
+            
+            // Initialize
+            function init() {
+                showSection('hunts');
+                
+                // Check for stored API key
+                const storedApiKey = localStorage.getItem('bh_api_key');
+                if (storedApiKey) {
+                    document.getElementById('api-key-input').value = storedApiKey;
+                    document.getElementById('admin-controls').classList.remove('hidden');
+                    document.getElementById('api-key-form').classList.add('hidden');
+                }
+                
+                // Draw charts
+                setTimeout(drawProviderChart, 100);
+            }
+            
+            // Global function assignments
+            window.showSection = showSection;
+            window.showHuntDetail = showHuntDetail;
+            window.openCreateHuntModal = openCreateHuntModal;
+            window.closeCreateHuntModal = closeCreateHuntModal;
+            window.openAddBonusModal = openAddBonusModal;
+            window.closeAddBonusModal = closeAddBonusModal;
+            window.authenticateAPI = authenticateAPI;
+            window.startOpening = startOpening;
+            window.openSetPayoutModal = openSetPayoutModal;
+            
+            // Initialize on DOM load
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,594 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BonusHunter Pro - Advanced Slot Tracking Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7C3AED',
+                        secondary: '#3B82F6',
+                        accent: '#10B981',
+                        warning: '#F59E0B',
+                        dark: '#0F0F23',
+                        darker: '#1A1B3A',
+                        card: '#252B5C',
+                        purple: {
+                            500: '#7C3AED',
+                            600: '#6D28D9',
+                            700: '#5B21B6'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    },
+                    boxShadow: {
+                        'neon': '0 0 20px rgba(124, 58, 237, 0.5)',
+                        'neon-green': '0 0 20px rgba(16, 185, 129, 0.5)',
+                        'neon-blue': '0 0 20px rgba(59, 130, 246, 0.5)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glow-effect {
+            transition: all 0.3s ease;
+        }
+        .glow-effect:hover {
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.6);
+            transform: translateY(-2px);
+        }
+        .slot-card:hover {
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.4);
+            transform: scale(1.02);
+        }
+        .pulse-glow {
+            animation: pulse-glow 2s infinite;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(124, 58, 237, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(124, 58, 237, 0.8); }
+        }
+    </style>
+</head>
+<body class="bg-dark text-white font-sans">
+
+    <!-- @COMPONENT: Header [navigation, user stats, live indicators] -->
+    <header class="bg-darker border-b border-purple-500/20 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo and Brand -->
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-coins text-white text-lg"></i>
+                        </div>
+                        <span class="text-xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">BonusHunter Pro</span>
+                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="hidden md:flex space-x-8">
+                    <a href="#" class="text-purple-400 hover:text-purple-300 transition-colors">Dashboard</a>
+                    <a href="#" class="text-gray-300 hover:text-white transition-colors">Live Hunts</a>
+                    <a href="#" class="text-gray-300 hover:text-white transition-colors">Slot Database</a>
+                    <a href="#" class="text-gray-300 hover:text-white transition-colors">OBS Widgets</a>
+                    <a href="#" class="text-gray-300 hover:text-white transition-colors">Community</a>
+                </nav>
+
+                <!-- User Stats and Actions -->
+                <div class="flex items-center space-x-4">
+                    <div class="hidden sm:flex items-center space-x-4 text-sm">
+                        <div class="flex items-center space-x-1">
+                            <i class="fas fa-trophy text-accent"></i>
+                            <span data-bind="user.totalHunts">247</span>
+                        </div>
+                        <div class="flex items-center space-x-1">
+                            <i class="fas fa-users text-blue-400"></i>
+                            <span data-bind="platform.activeUsers">1,453</span>
+                        </div>
+                    </div>
+                    <button class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        <i class="fas fa-plus mr-2"></i>New Hunt
+                    </button>
+                    <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- @END_COMPONENT: Header -->
+
+    <div class="flex min-h-screen">
+        <!-- @COMPONENT: Sidebar [navigation, quick stats, recent hunts] -->
+        <aside class="w-64 bg-darker border-r border-purple-500/20 hidden lg:block">
+            <div class="p-6">
+                <!-- Quick Actions -->
+                <div class="mb-8">
+                    <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Quick Actions</h3>
+                    <div class="space-y-2">
+                        <button class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 px-4 py-3 rounded-lg text-left transition-all glow-effect">
+                            <i class="fas fa-play mr-3"></i>Start New Hunt
+                        </button>
+                        <button class="w-full bg-card hover:bg-purple-500/20 px-4 py-3 rounded-lg text-left transition-colors">
+                            <i class="fas fa-video mr-3"></i>OBS Setup
+                        </button>
+                        <button class="w-full bg-card hover:bg-purple-500/20 px-4 py-3 rounded-lg text-left transition-colors">
+                            <i class="fas fa-share mr-3"></i>Share Hunt
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Stats -->
+                <div class="mb-8">
+                    <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Live Stats</h3>
+                    <div class="space-y-3">
+                        <div class="bg-card p-3 rounded-lg">
+                            <div class="text-2xl font-bold text-accent" data-bind="currentHunt.totalBonuses">23</div>
+                            <div class="text-xs text-gray-400">Collected Bonuses</div>
+                        </div>
+                        <div class="bg-card p-3 rounded-lg">
+                            <div class="text-2xl font-bold text-warning" data-bind="currentHunt.totalSpent">€245</div>
+                            <div class="text-xs text-gray-400">Total Spent</div>
+                        </div>
+                        <div class="bg-card p-3 rounded-lg">
+                            <div class="text-2xl font-bold text-blue-400" data-bind="currentHunt.avgBet">€1.25</div>
+                            <div class="text-xs text-gray-400">Average Bet</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Hunts -->
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Recent Hunts</h3>
+                    <div class="space-y-2">
+                        <!-- @MAP: recentHunts.map(hunt => ( -->
+                        <div class="bg-card p-3 rounded-lg cursor-pointer hover:bg-purple-500/20 transition-colors" data-mock="true">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="font-medium text-sm">Epic Session #47</div>
+                                    <div class="text-xs text-gray-400">2 hours ago</div>
+                                </div>
+                                <div class="text-xs text-accent">+€147</div>
+                            </div>
+                        </div>
+                        <div class="bg-card p-3 rounded-lg cursor-pointer hover:bg-purple-500/20 transition-colors" data-mock="true">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="font-medium text-sm">Mega Hunt #46</div>
+                                    <div class="text-xs text-gray-400">1 day ago</div>
+                                </div>
+                                <div class="text-xs text-red-400">-€89</div>
+                            </div>
+                        </div>
+                        <!-- @END_MAP )) -->
+                    </div>
+                </div>
+            </div>
+        </aside>
+        <!-- @END_COMPONENT: Sidebar -->
+
+        <!-- @COMPONENT: MainContent [dashboard, hunt tracking, slot management] -->
+        <main class="flex-1 p-6">
+            <!-- Dashboard Header -->
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold mb-2">Hunt Dashboard</h1>
+                <p class="text-gray-400">Track your bonus hunts, manage slots, and monitor your streaming stats in real-time.</p>
+            </div>
+
+            <!-- Active Hunt Section -->
+            <div class="mb-8">
+                <div class="bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/30 rounded-xl p-6 pulse-glow">
+                    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6">
+                        <div>
+                            <h2 class="text-xl font-bold mb-2">🔥 Active Hunt: Weekend Warrior</h2>
+                            <div class="flex items-center space-x-4 text-sm text-gray-300">
+                                <span><i class="fas fa-clock mr-1"></i>2h 34m</span>
+                                <span><i class="fas fa-coins mr-1"></i>23 bonuses</span>
+                                <span><i class="fas fa-eye mr-1"></i>156 viewers</span>
+                            </div>
+                        </div>
+                        <div class="flex space-x-3 mt-4 lg:mt-0">
+                            <button class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm transition-colors">
+                                <i class="fas fa-stop mr-2"></i>End Hunt
+                            </button>
+                            <button class="bg-accent hover:bg-green-600 px-4 py-2 rounded-lg text-sm transition-colors">
+                                <i class="fas fa-play mr-2"></i>Open All
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Hunt Progress -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-dark/50 p-4 rounded-lg">
+                            <div class="text-2xl font-bold text-accent">€345.50</div>
+                            <div class="text-sm text-gray-400">Total Invested</div>
+                        </div>
+                        <div class="bg-dark/50 p-4 rounded-lg">
+                            <div class="text-2xl font-bold text-warning">€1.50</div>
+                            <div class="text-sm text-gray-400">Avg Bet Size</div>
+                        </div>
+                        <div class="bg-dark/50 p-4 rounded-lg">
+                            <div class="text-2xl font-bold text-blue-400">23</div>
+                            <div class="text-sm text-gray-400">Bonuses Collected</div>
+                        </div>
+                        <div class="bg-dark/50 p-4 rounded-lg">
+                            <div class="text-2xl font-bold text-purple-400">156</div>
+                            <div class="text-sm text-gray-400">Live Viewers</div>
+                        </div>
+                    </div>
+
+                    <!-- Real-time Progress Bar -->
+                    <div class="bg-dark/50 rounded-lg p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium">Hunt Progress</span>
+                            <span class="text-sm text-gray-400">Target: 50 bonuses</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-3">
+                            <div class="bg-gradient-to-r from-accent to-blue-500 h-3 rounded-full shadow-neon-green" style="width: 46%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slot Management Section -->
+            <div class="mb-8">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+                    <h2 class="text-2xl font-bold mb-4 sm:mb-0">Slot Management</h2>
+                    <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
+                        <input type="text" placeholder="Search slots..." class="bg-card border border-purple-500/30 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-purple-500 w-full sm:w-64">
+                        <button class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm transition-colors whitespace-nowrap">
+                            <i class="fas fa-plus mr-2"></i>Add Slot
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Slot Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <!-- @MAP: activeSlots.map(slot => ( -->
+                    <!-- High-end slot machine with golden details and luxury feel -->
+                    <div class="bg-card rounded-xl overflow-hidden slot-card transition-all duration-300 cursor-pointer" data-mock="true">
+                        <div class="relative">
+                            <img src="https://images.unsplash.com/photo-1596838132731-3301c3fd4317?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200" alt="Luxury slot machine interface" class="w-full h-32 object-cover">
+                            <div class="absolute top-2 right-2 bg-accent text-xs px-2 py-1 rounded-full font-bold">BONUS</div>
+                            <div class="absolute bottom-2 left-2 bg-dark/80 text-xs px-2 py-1 rounded">€2.50</div>
+                        </div>
+                        <div class="p-3">
+                            <div class="font-semibold text-sm mb-1">Gates of Olympus</div>
+                            <div class="text-xs text-gray-400 mb-2">Pragmatic Play</div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-accent">Ready to open</span>
+                                <button class="bg-purple-600 hover:bg-purple-700 text-xs px-2 py-1 rounded transition-colors">Open</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modern digital slot interface with neon blue elements -->
+                    <div class="bg-card rounded-xl overflow-hidden slot-card transition-all duration-300 cursor-pointer" data-mock="true">
+                        <div class="relative">
+                            <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200" alt="Digital slot machine with neon lighting" class="w-full h-32 object-cover">
+                            <div class="absolute top-2 right-2 bg-blue-500 text-xs px-2 py-1 rounded-full font-bold">BONUS</div>
+                            <div class="absolute bottom-2 left-2 bg-dark/80 text-xs px-2 py-1 rounded">€1.25</div>
+                        </div>
+                        <div class="p-3">
+                            <div class="font-semibold text-sm mb-1">Sweet Bonanza</div>
+                            <div class="text-xs text-gray-400 mb-2">Pragmatic Play</div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-accent">Ready to open</span>
+                                <button class="bg-purple-600 hover:bg-purple-700 text-xs px-2 py-1 rounded transition-colors">Open</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Retro-style slot machine with classic casino atmosphere -->
+                    <div class="bg-card rounded-xl overflow-hidden slot-card transition-all duration-300 cursor-pointer" data-mock="true">
+                        <div class="relative">
+                            <img src="https://pixabay.com/get/ge4446e1a94469cf412b47c4050acad708222b04ff31eb252a2f8dee27286dc8ccf14f5d4fada5131560665ca927118122543e3fa8b8edea8d45e86ea1a0018da_1280.jpg" alt="Classic casino slot machine with vintage styling" class="w-full h-32 object-cover">
+                            <div class="absolute top-2 right-2 bg-warning text-dark text-xs px-2 py-1 rounded-full font-bold">HUNTING</div>
+                            <div class="absolute bottom-2 left-2 bg-dark/80 text-xs px-2 py-1 rounded">€0.75</div>
+                        </div>
+                        <div class="p-3">
+                            <div class="font-semibold text-sm mb-1">Book of Dead</div>
+                            <div class="text-xs text-gray-400 mb-2">Play'n GO</div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-warning">Hunting bonus</span>
+                                <button class="bg-gray-600 text-xs px-2 py-1 rounded cursor-not-allowed" disabled>Hunting</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Futuristic slot with holographic effects and sci-fi theme -->
+                    <div class="bg-card rounded-xl overflow-hidden slot-card transition-all duration-300 cursor-pointer" data-mock="true">
+                        <div class="relative">
+                            <img src="https://images.unsplash.com/photo-1614680376573-df3480f0c6ff?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200" alt="Futuristic slot machine with holographic display" class="w-full h-32 object-cover">
+                            <div class="absolute top-2 right-2 bg-accent text-xs px-2 py-1 rounded-full font-bold">BONUS</div>
+                            <div class="absolute bottom-2 left-2 bg-dark/80 text-xs px-2 py-1 rounded">€5.00</div>
+                        </div>
+                        <div class="p-3">
+                            <div class="font-semibold text-sm mb-1">Starlight Princess</div>
+                            <div class="text-xs text-gray-400 mb-2">Pragmatic Play</div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-accent">Ready to open</span>
+                                <button class="bg-purple-600 hover:bg-purple-700 text-xs px-2 py-1 rounded transition-colors">Open</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- @END_MAP )) -->
+                </div>
+            </div>
+
+            <!-- OBS Integration Section -->
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold mb-6">OBS Integration & Streaming Tools</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Widget Templates -->
+                    <div class="bg-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold mb-4">Stream Widgets</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center p-3 bg-dark/50 rounded-lg">
+                                <div>
+                                    <div class="font-medium">Hunt Progress Bar</div>
+                                    <div class="text-sm text-gray-400">Shows current hunt statistics</div>
+                                </div>
+                                <button class="bg-blue-600 hover:bg-blue-700 text-xs px-3 py-1 rounded transition-colors">Copy URL</button>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-dark/50 rounded-lg">
+                                <div>
+                                    <div class="font-medium">Bonus Counter</div>
+                                    <div class="text-sm text-gray-400">Live bonus count display</div>
+                                </div>
+                                <button class="bg-blue-600 hover:bg-blue-700 text-xs px-3 py-1 rounded transition-colors">Copy URL</button>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-dark/50 rounded-lg">
+                                <div>
+                                    <div class="font-medium">Recent Slots</div>
+                                    <div class="text-sm text-gray-400">Shows last collected bonuses</div>
+                                </div>
+                                <button class="bg-blue-600 hover:bg-blue-700 text-xs px-3 py-1 rounded transition-colors">Copy URL</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Stream Setup -->
+                    <div class="bg-card rounded-xl p-6">
+                        <!-- Professional streaming setup with multiple monitors and gaming peripherals -->
+                        <img src="https://images.unsplash.com/photo-1561736778-92e52a7769ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=200" alt="Professional gaming streaming setup with multiple monitors" class="w-full h-32 object-cover rounded-lg mb-4">
+                        <h3 class="text-lg font-semibold mb-4">Stream Setup Assistant</h3>
+                        <div class="space-y-3">
+                            <button class="w-full bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg transition-colors text-left">
+                                <i class="fas fa-cog mr-2"></i>Auto-configure OBS
+                            </button>
+                            <button class="w-full bg-accent hover:bg-green-600 px-4 py-2 rounded-lg transition-colors text-left">
+                                <i class="fas fa-broadcast-tower mr-2"></i>Test Stream Connection
+                            </button>
+                            <button class="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors text-left">
+                                <i class="fas fa-share-alt mr-2"></i>Share Hunt Link
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Dashboard -->
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold mb-6">Analytics & Performance</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Performance Overview -->
+                    <div class="bg-card rounded-xl p-6">
+                        <!-- Modern dashboard display showing analytics and performance metrics -->
+                        <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=160" alt="Analytics dashboard with charts and performance metrics" class="w-full h-24 object-cover rounded-lg mb-4">
+                        <h3 class="text-lg font-semibold mb-4">Weekly Performance</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Total Hunts</span>
+                                <span class="font-semibold">47</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Avg Session</span>
+                                <span class="font-semibold">2.3h</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Success Rate</span>
+                                <span class="font-semibold text-accent">68%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">ROI</span>
+                                <span class="font-semibold text-red-400">-12%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Viewer Engagement -->
+                    <div class="bg-card rounded-xl p-6">
+                        <!-- Professional streaming setup showing viewer engagement metrics -->
+                        <img src="https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=160" alt="Streaming equipment and viewer engagement setup" class="w-full h-24 object-cover rounded-lg mb-4">
+                        <h3 class="text-lg font-semibold mb-4">Viewer Engagement</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Peak Viewers</span>
+                                <span class="font-semibold">234</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Avg Watch Time</span>
+                                <span class="font-semibold">18m</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Chat Activity</span>
+                                <span class="font-semibold text-accent">High</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Follows/Hour</span>
+                                <span class="font-semibold text-blue-400">3.2</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Performing Slots -->
+                    <div class="bg-card rounded-xl p-6">
+                        <!-- Data visualization dashboard with charts and graphs -->
+                        <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=160" alt="Data analytics dashboard with performance charts" class="w-full h-24 object-cover rounded-lg mb-4">
+                        <h3 class="text-lg font-semibold mb-4">Top Slots</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm">Gates of Olympus</span>
+                                <span class="text-xs text-accent font-semibold">+€245</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm">Sweet Bonanza</span>
+                                <span class="text-xs text-accent font-semibold">+€178</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm">Book of Dead</span>
+                                <span class="text-xs text-red-400 font-semibold">-€89</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm">Starlight Princess</span>
+                                <span class="text-xs text-accent font-semibold">+€134</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <!-- @END_COMPONENT: MainContent -->
+    </div>
+
+    <!-- @COMPONENT: MobileMenu [responsive navigation overlay] -->
+    <div id="mobileMenu" class="fixed inset-0 bg-dark/95 z-50 lg:hidden hidden">
+        <div class="flex justify-end p-4">
+            <button id="closeMobileMenu" class="text-white hover:text-purple-400">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        <nav class="px-6 py-4 space-y-4">
+            <a href="#" class="block text-lg font-medium text-purple-400">Dashboard</a>
+            <a href="#" class="block text-lg font-medium text-gray-300">Live Hunts</a>
+            <a href="#" class="block text-lg font-medium text-gray-300">Slot Database</a>
+            <a href="#" class="block text-lg font-medium text-gray-300">OBS Widgets</a>
+            <a href="#" class="block text-lg font-medium text-gray-300">Community</a>
+        </nav>
+    </div>
+    <!-- @END_COMPONENT: MobileMenu -->
+
+    <!-- @COMPONENT: NotificationToast [real-time updates, bonus alerts] -->
+    <div id="notificationContainer" class="fixed bottom-4 right-4 space-y-2 z-40">
+        <!-- Sample notifications -->
+        <div class="bg-accent text-dark px-4 py-3 rounded-lg shadow-neon-green transform translate-x-full transition-transform" data-mock="true">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-check-circle"></i>
+                <span class="font-medium">Bonus collected in Gates of Olympus!</span>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: NotificationToast -->
+
+    <script>
+        (function() {
+            // TODO: Implement business logic, API calls, and state management
+            
+            // Mock real-time updates
+            function simulateRealTimeUpdates() {
+                // This would connect to WebSocket for real-time hunt updates
+                console.log('Simulating real-time hunt updates...');
+            }
+
+            // Hunt management functions
+            function startNewHunt() {
+                // TODO: Implement hunt creation logic
+                console.log('Starting new hunt...');
+            }
+
+            function addSlotToHunt(slotId) {
+                // TODO: Implement slot addition logic
+                console.log('Adding slot to hunt:', slotId);
+            }
+
+            function openBonus(slotId) {
+                // TODO: Implement bonus opening logic
+                console.log('Opening bonus for slot:', slotId);
+            }
+
+            // OBS integration functions
+            function generateOBSWidget(type) {
+                // TODO: Implement OBS widget generation
+                console.log('Generating OBS widget:', type);
+            }
+
+            // Mobile menu toggle
+            const mobileMenuBtn = document.querySelector('[data-mobile-menu]');
+            const mobileMenu = document.getElementById('mobileMenu');
+            const closeMobileMenu = document.getElementById('closeMobileMenu');
+
+            if (mobileMenuBtn) {
+                mobileMenuBtn.addEventListener('click', () => {
+                    mobileMenu.classList.remove('hidden');
+                });
+            }
+
+            if (closeMobileMenu) {
+                closeMobileMenu.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                });
+            }
+
+            // Initialize tooltips and interactive elements
+            document.addEventListener('DOMContentLoaded', function() {
+                // Add hover effects and animations
+                const slotCards = document.querySelectorAll('.slot-card');
+                slotCards.forEach(card => {
+                    card.addEventListener('mouseenter', function() {
+                        this.style.transform = 'scale(1.02)';
+                    });
+                    card.addEventListener('mouseleave', function() {
+                        this.style.transform = 'scale(1)';
+                    });
+                });
+
+                // Simulate real-time updates
+                simulateRealTimeUpdates();
+            });
+
+            // Notification system
+            function showNotification(message, type = 'success') {
+                const container = document.getElementById('notificationContainer');
+                const notification = document.createElement('div');
+                notification.className = `bg-${type === 'success' ? 'accent text-dark' : 'red-600 text-white'} px-4 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform`;
+                notification.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                        <span class="font-medium">${message}</span>
+                    </div>
+                `;
+                container.appendChild(notification);
+                
+                // Animate in
+                setTimeout(() => {
+                    notification.classList.remove('translate-x-full');
+                }, 100);
+                
+                // Remove after delay
+                setTimeout(() => {
+                    notification.classList.add('translate-x-full');
+                    setTimeout(() => {
+                        container.removeChild(notification);
+                    }, 300);
+                }, 3000);
+            }
+
+            // Export functions for potential React integration
+            window.BonusHunterApp = {
+                startNewHunt,
+                addSlotToHunt,
+                openBonus,
+                generateOBSWidget,
+                showNotification
+            };
+        })();
+    </script>
+</body>
+</html>
